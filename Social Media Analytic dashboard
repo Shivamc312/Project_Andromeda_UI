@@ -1,0 +1,1882 @@
+"use client"
+
+import type React from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import dynamic from "next/dynamic"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  AreaChart,
+  Area,
+} from "recharts"
+
+interface PlaceholderIconProps {
+  className?: string
+  text?: string
+  bgColor?: string
+  textColor?: string
+}
+
+interface PlaceholderTextProps {
+  text: string
+  className?: string
+  bgColor?: string
+  textColor?: string
+}
+
+const PlaceholderIcon = ({
+  className = "",
+  text = "",
+  bgColor = "bg-gray-300 dark:bg-gray-600",
+  textColor = "text-gray-700 dark:text-gray-300",
+}: PlaceholderIconProps) => (
+  <div
+    className={`${bgColor} ${textColor} rounded flex items-center justify-center font-semibold text-xs ${className}`}
+  >
+    {text}
+  </div>
+)
+
+const PlaceholderText = ({
+  text,
+  className = "",
+  bgColor = "bg-gray-300 dark:bg-gray-600",
+  textColor = "text-gray-700 dark:text-gray-300",
+}: PlaceholderTextProps) => (
+  <div
+    className={`${bgColor} ${textColor} rounded flex items-center justify-center font-semibold text-xs ${className}`}
+  >
+    {text}
+  </div>
+)
+
+interface SocialData {
+  date: string
+  timestamp: number
+  Instagram: number
+  Twitter: number
+  Facebook: number
+  TikTok: number
+  LinkedIn: number
+  totalEngagement: number
+  reach: number
+  impressions: number
+}
+
+interface SentimentData {
+  date: string
+  timestamp: number
+  positive: number
+  negative: number
+  neutral: number
+  sentiment_score: number
+}
+
+interface Campaign {
+  date: string
+  name: string
+  type: "product" | "partnership" | "seasonal" | "awareness"
+  color: string
+}
+
+interface TimeRange {
+  startIndex: number
+  endIndex: number
+}
+
+interface StatCard {
+  title: string
+  value: number | string
+  color: "cyan" | "emerald" | "violet" | "rose"
+  change: string
+  icon: React.ReactNode
+}
+
+interface ToastMessage {
+  id: string
+  message: string
+  type: "success" | "info" | "warning" | "error"
+}
+
+type Platform = "all" | "Instagram" | "Twitter" | "Facebook" | "TikTok" | "LinkedIn"
+
+interface SocialMediaDashboardProps {
+  initialAnalysisId?: string
+  initialPlatform?: Platform
+  initialTimeRange?: TimeRange
+  initialRealtime?: boolean
+  initialTheme?: boolean
+}
+
+const SocialMediaDashboard: React.FC<SocialMediaDashboardProps> = ({
+  initialAnalysisId,
+  initialPlatform,
+  initialTimeRange,
+  initialRealtime,
+  initialTheme,
+}) => {
+  const [data, setData] = useState<SocialData[]>([])
+  const [sentimentData, setSentimentData] = useState<SentimentData[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>(
+    initialTimeRange || { startIndex: 0, endIndex: 100 },
+  )
+  const [cursorPosition, setCursorPosition] = useState<string | null>(null)
+  const [isMobileOverlayOpen, setIsMobileOverlayOpen] = useState<boolean>(false)
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("all")
+  const [isRealTimeActive, setIsRealTimeActive] = useState<boolean>(true)
+  const [savedAnalysis, setSavedAnalysis] = useState<string>("dashboard-001")
+  const [isAnimated, setIsAnimated] = useState<boolean>(false)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true)
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const [isWebSocketConnected, setIsWebSocketConnected] = useState<boolean>(false)
+  const [windowWidth, setWindowWidth] = useState<number>(1024) // Default to desktop size
+  const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState<boolean>(false)
+  const [isClient, setIsClient] = useState<boolean>(false)
+
+  const chartRefs = useRef<any[]>([])
+  const wsRef = useRef<WebSocket | null>(null)
+
+  const platformColors = useMemo(
+    () => ({
+      Instagram: "#E4405F",
+      Twitter: "#1DA1F2",
+      Facebook: "#1877F2",
+      TikTok: isDarkMode ? "#FFFFFF" : "#000000",
+      LinkedIn: "#0A66C2",
+    }),
+    [isDarkMode],
+  )
+
+  const platformIcons: Record<string, React.ReactNode> = {
+    Instagram: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        className="w-3 h-3 sm:w-4 sm:h-4"
+      >
+        <path
+          d="M16,4H8C5.791,4,4,5.791,4,8v8c0,2.209,1.791,4,4,4h8c2.209,0,4-1.791,4-4V8C20,5.791,18.209,4,16,4z M12,16c-2.209,0-4-1.791-4-4c0-2.209,1.791-4,4-4s4,1.791,4,4C16,14.209,14.209,16,12,16z"
+          opacity=".3"
+          fill="currentColor"
+        />
+        <path
+          d="M16,3H8C5.243,3,3,5.243,3,8v8c0,2.757,2.243,5,5,5h8c2.757,0,5-2.243,5-5V8C21,5.243,18.757,3,16,3z M19,16c0,1.654-1.346,3-3,3H8c-1.654,0-3-1.346-3-3V8c0-1.654,1.346-3,3-3h8c1.654,0,3,1.346,3,3V16z"
+          fill="currentColor"
+        />
+        <path
+          d="M12 7c-2.757 0-5 2.243-5 5s2.243 5 5 5 5-2.243 5-5S14.757 7 12 7zM12 15c-1.654 0-3-1.346-3-3s1.346-3 3-3 3 1.346 3 3S13.654 15 12 15zM17 6A1 1 0 1 0 17 8 1 1 0 1 0 17 6z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+    Twitter: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        className="w-3 h-3 sm:w-4 sm:h-4"
+      >
+        <g opacity=".3" fill="currentColor">
+          <polygon fillRule="evenodd" points="16.002,19 6.208,5 8.255,5 18.035,19" clipRule="evenodd" />
+          <polygon points="8.776,4 4.288,4 15.481,20 19.953,20 8.776,4" />
+        </g>
+        <polygon
+          fillRule="evenodd"
+          points="10.13,12.36 11.32,14.04 5.38,21 2.74,21"
+          clipRule="evenodd"
+          fill="currentColor"
+        />
+        <polygon
+          fillRule="evenodd"
+          points="20.74,3 13.78,11.16 12.6,9.47 18.14,3"
+          clipRule="evenodd"
+          fill="currentColor"
+        />
+        <path
+          d="M8.255,5l9.779,14h-2.032L6.208,5H8.255 M9.298,3h-6.93l12.593,18h6.91L9.298,3L9.298,3z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+    Facebook: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        className="w-3 h-3 sm:w-4 sm:h-4"
+      >
+        <path d="M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z" opacity=".3" fill="currentColor" />
+        <g opacity=".3" fill="currentColor">
+          <path d="M20.949 12.951c.001-.013.004-.025.005-.038C20.953 12.925 20.95 12.938 20.949 12.951zM3.046 12.909c.002.017.005.034.007.051C3.051 12.944 3.047 12.927 3.046 12.909zM13.218 14.385h2.329l.366-2.366h-2.695v-1.293c0-.983.321-1.854 1.241-1.854h1.477V6.807c-.26-.035-.809-.112-1.846-.112-2.166 0-3.436 1.144-3.436 3.75v1.574H8.427v2.366h2.227v6.503C11.095 20.955 11.541 21 12 21c.414 0 .819-.038 1.218-.092V14.385z" />
+        </g>
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeMiterlimit="10"
+          strokeWidth="2"
+          d="M12 3A9 9 0 1 0 12 21A9 9 0 1 0 12 3Z"
+        />
+        <path
+          d="M20.949 12.951c.001-.013.004-.025.005-.038C20.953 12.925 20.95 12.938 20.949 12.951zM3.046 12.909c.002.017.005.034.007.051C3.051 12.944 3.047 12.927 3.046 12.909zM13.218 14.385h2.329l.366-2.366h-2.695v-1.293c0-.983.321-1.854 1.241-1.854h1.477V6.807c-.26-.035-.809-.112-1.846-.112-2.166 0-3.436 1.144-3.436 3.75v1.574H8.427v2.366h2.227v6.503C11.095 20.955 11.541 21 12 21c.414 0 .819-.038 1.218-.092V14.385z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+    TikTok: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        className="w-3 h-3 sm:w-4 sm:h-4"
+      >
+        <path
+          d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+    LinkedIn: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        className="w-3 h-3 sm:w-4 sm:h-4"
+      >
+        <path
+          d="M19,20H5c-0.552,0-1-0.448-1-1V5c0-0.552,0.448-1,1-1h14c0.552,0,1,0.448,1,1v14C20,19.552,19.552,20,19,20z"
+          opacity=".3"
+          fill="currentColor"
+        />
+        <path
+          d="M9,17H6.477v-7H9V17z M7.694,8.717c-0.771,0-1.286-0.514-1.286-1.2s0.514-1.2,1.371-1.2c0.771,0,1.286,0.514,1.286,1.2S8.551,8.717,7.694,8.717z M18,17h-2.442v-3.826c0-1.058-0.651-1.302-0.895-1.302s-1.058,0.163-1.058,1.302c0,0.163,0,3.826,0,3.826h-2.523v-7h2.523v0.977C13.93,10.407,14.581,10,15.802,10C17.023,10,18,10.977,18,13.174V17z"
+          fill="currentColor"
+        />
+        <path
+          d="M19,3H5C3.895,3,3,3.895,3,5v14c0,1.105,0.895,2,2,2h14c1.105,0,2-0.895,2-2V5C21,3.895,20.105,3,19,3z M19,19H5V5h14V19z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+  }
+
+  const addToast = useCallback((message: string, type: ToastMessage["type"] = "info") => {
+    const id = Math.random().toString(36).substr(2, 9)
+    const newToast: ToastMessage = { id, message, type }
+    setToasts((prev) => [...prev, newToast])
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    }, 3000)
+  }, [])
+
+  const getThemeClasses = () => {
+    if (isDarkMode) {
+      return {
+        bg: "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950",
+        text: "text-white",
+        card: "bg-slate-900/60 backdrop-blur-2xl border-white/10",
+        cardHover: "hover:border-white/20",
+        header: "bg-slate-900/60 backdrop-blur-2xl border-b border-white/10",
+        input: "bg-slate-800/80 backdrop-blur-xl border-white/20",
+        button: "bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 border-cyan-400/50",
+        footer: "bg-slate-900/80 backdrop-blur-2xl border-t border-white/10",
+        overlay: "bg-slate-900/95 backdrop-blur-2xl border-t border-white/20",
+        muted: "text-slate-400",
+        accent: "text-cyan-400",
+      }
+    } else {
+      return {
+        bg: "bg-gradient-to-br from-gray-50 via-white to-gray-100",
+        text: "text-gray-900",
+        card: "bg-white/80 backdrop-blur-2xl border-gray-200/50 shadow-xl",
+        cardHover: "hover:border-gray-300/50",
+        header: "bg-white/80 backdrop-blur-2xl border-b border-gray-200/50",
+        input: "bg-gray-100/80 backdrop-blur-xl border-gray-300/50",
+        button: "bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-400/50",
+        footer: "bg-white/80 backdrop-blur-2xl border-t border-gray-200/50",
+        overlay: "bg-white/95 backdrop-blur-2xl border-t border-gray-200/50",
+        muted: "text-gray-600",
+        accent: "text-blue-600",
+      }
+    }
+  }
+
+  const theme = getThemeClasses()
+
+  const generateInitialData = useCallback((): void => {
+    const platforms: (keyof Omit<SocialData, "date" | "timestamp" | "totalEngagement" | "reach" | "impressions">)[] = [
+      "Instagram",
+      "Twitter",
+      "Facebook",
+      "TikTok",
+      "LinkedIn",
+    ]
+
+    const baseData: SocialData[] = Array.from({ length: 100 }, (_, i): SocialData => {
+      // Create a date starting from January 1, 2024
+      const date = new Date(2024, 0, 1) // January 1, 2024
+      date.setDate(date.getDate() + i) // Add i days
+
+      const instagramVal = Math.floor(Math.random() * 10000) + 5000
+      const twitterVal = Math.floor(Math.random() * 8000) + 3000
+      const facebookVal = Math.floor(Math.random() * 12000) + 6000
+      const tikTokVal = Math.floor(Math.random() * 15000) + 8000
+      const linkedInVal = Math.floor(Math.random() * 5000) + 2000
+
+      return {
+        date: date.toISOString().split("T")[0],
+        timestamp: date.getTime(),
+        Instagram: instagramVal,
+        Twitter: twitterVal,
+        Facebook: facebookVal,
+        TikTok: tikTokVal,
+        LinkedIn: linkedInVal,
+        totalEngagement: instagramVal + twitterVal + facebookVal + tikTokVal + linkedInVal,
+        reach: Math.floor(Math.random() * 50000) + 20000,
+        impressions: Math.floor(Math.random() * 100000) + 50000,
+      }
+    })
+
+    const sentiment: SentimentData[] = baseData.map(
+      (item): SentimentData => ({
+        date: item.date,
+        timestamp: item.timestamp,
+        positive: Math.random() * 40 + 40,
+        negative: Math.random() * 30 + 10,
+        neutral: Math.random() * 30 + 20,
+        sentiment_score: (Math.random() - 0.5) * 2,
+      }),
+    )
+
+    const campaignEvents: Campaign[] = [
+      { date: baseData[20].date, name: "Summer Launch", type: "product", color: "#06b6d4" },
+      { date: baseData[45].date, name: "Influencer Collab", type: "partnership", color: "#10b981" },
+      { date: baseData[70].date, name: "Holiday Campaign", type: "seasonal", color: "#8b5cf6" },
+      { date: baseData[85].date, name: "Brand Awareness", type: "awareness", color: "#f43f5e" },
+    ]
+
+    setData(baseData)
+    setSentimentData(sentiment)
+    setCampaigns(campaignEvents)
+    setIsAnimated(true)
+  }, [])
+
+  const initializeWebSocket = useCallback(() => {
+    try {
+      setIsWebSocketConnected(true)
+      addToast("WebSocket connected successfully", "success")
+    } catch (error) {
+      setIsWebSocketConnected(false)
+      addToast("WebSocket connection failed", "error")
+    }
+  }, [addToast])
+
+  useEffect(() => {
+    generateInitialData()
+
+    if (isRealTimeActive) {
+      initializeWebSocket()
+
+      const interval = setInterval(() => {
+        setData((prevData) => {
+          const newData = [...prevData]
+          const lastItem = newData[newData.length - 1]
+          const newDate = new Date(lastItem.timestamp + 24 * 60 * 60 * 1000)
+
+          const instagramVal = Math.floor(Math.random() * 10000) + 5000
+          const twitterVal = Math.floor(Math.random() * 8000) + 3000
+          const facebookVal = Math.floor(Math.random() * 12000) + 6000
+          const tikTokVal = Math.floor(Math.random() * 15000) + 8000
+          const linkedInVal = Math.floor(Math.random() * 5000) + 2000
+
+          const newItem: SocialData = {
+            date: newDate.toISOString().split("T")[0],
+            timestamp: newDate.getTime(),
+            Instagram: instagramVal,
+            Twitter: twitterVal,
+            Facebook: facebookVal,
+            TikTok: tikTokVal,
+            LinkedIn: linkedInVal,
+            totalEngagement: instagramVal + twitterVal + facebookVal + tikTokVal + linkedInVal,
+            reach: Math.floor(Math.random() * 50000) + 20000,
+            impressions: Math.floor(Math.random() * 100000) + 50000,
+          }
+
+          newData.push(newItem)
+          return newData.slice(-100)
+        })
+
+        setSentimentData((prevData) => {
+          const newData = [...prevData]
+          const lastItem = newData[newData.length - 1]
+          const newDate = new Date(lastItem.timestamp + 24 * 60 * 60 * 1000)
+
+          const newItem: SentimentData = {
+            date: newDate.toISOString().split("T")[0],
+            timestamp: newDate.getTime(),
+            positive: Math.random() * 40 + 40,
+            negative: Math.random() * 30 + 10,
+            neutral: Math.random() * 30 + 20,
+            sentiment_score: (Math.random() - 0.5) * 2,
+          }
+
+          newData.push(newItem)
+          return newData.slice(-100)
+        })
+      }, 4000)
+
+      return () => {
+        clearInterval(interval)
+        if (wsRef.current) {
+          wsRef.current.close()
+        }
+        setIsWebSocketConnected(false)
+      }
+    } else {
+      setIsWebSocketConnected(false)
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
+  }, [isRealTimeActive, generateInitialData, initializeWebSocket])
+
+  const handleBrushChange = (brushData: any): void => {
+    if (brushData && brushData.startIndex !== undefined && brushData.endIndex !== undefined) {
+      setSelectedTimeRange({
+        startIndex: brushData.startIndex,
+        endIndex: brushData.endIndex,
+      })
+      addToast(`Time range selected: ${brushData.endIndex - brushData.startIndex + 1} days`, "info")
+    }
+  }
+
+  const handleMouseMove = (e: any): void => {
+    if (e && e.activeLabel) {
+      setCursorPosition(e.activeLabel)
+    }
+  }
+
+  const generateShareableLink = (): void => {
+    if (!isClient) return
+
+    const analysisId = savedAnalysis || `analysis-${Date.now()}` // Use savedAnalysis if available, otherwise generate a new one
+    const params = new URLSearchParams({
+      platform: selectedPlatform,
+      timeRange: JSON.stringify(selectedTimeRange), // Stringify the timeRange object
+      realtime: isRealTimeActive.toString(),
+      theme: isDarkMode ? "dark" : "light",
+      websocket: isWebSocketConnected.toString(),
+    })
+
+    const shareableUrl = `${window.location.origin}/dashboard/${analysisId}?${params.toString()}` // Use dynamic route
+
+    navigator.clipboard
+      .writeText(shareableUrl)
+      .then(() => {
+        addToast("Shareable link copied to clipboard!", "success")
+      })
+      .catch(() => {
+        addToast("Failed to copy link", "error")
+      })
+  }
+
+  const handleDownload = (format: "json") => {
+    if (!isClient) return
+
+    addToast(`Downloading JSON report...`, "info")
+
+    const data = filteredData
+    const content = JSON.stringify(data, null, 2)
+    const mimeType = "application/json"
+    const fileExtension = "json"
+
+    setTimeout(() => {
+      const blob = new Blob([content], { type: mimeType })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `social-analytics-${selectedPlatform}-${new Date().toISOString().split("T")[0]}.${fileExtension}`
+      link.click()
+      URL.revokeObjectURL(url)
+      addToast(`JSON report downloaded successfully!`, "success")
+    }, 1500)
+  }
+
+  const resetDashboard = () => {
+    // Reset all states to default values
+    setSelectedPlatform("all")
+    setSelectedTimeRange({ startIndex: 0, endIndex: 100 })
+    setCursorPosition(null)
+    setIsRealTimeActive(true)
+    setSavedAnalysis("dashboard-001")
+    generateInitialData()
+    addToast("Dashboard reset to default settings", "success")
+  }
+
+  const saveAnalysis = () => {
+    const analysisData = {
+      id: savedAnalysis,
+      platform: selectedPlatform,
+      timeRange: selectedTimeRange,
+      data: filteredData,
+      timestamp: new Date().toISOString(),
+    }
+
+    try {
+      localStorage.setItem(`analysis-${savedAnalysis}`, JSON.stringify(analysisData))
+      addToast("Analysis saved successfully!", "success")
+    } catch (error) {
+      addToast("Failed to save analysis", "error")
+    }
+  }
+
+  const loadAnalysis = (analysisId: string) => {
+    try {
+      // Load saved analysis data
+      const savedData = localStorage.getItem(`analysis-${analysisId}`)
+      if (savedData) {
+        const data = JSON.parse(savedData)
+        setSelectedPlatform(data.platform)
+        setSelectedTimeRange(data.timeRange)
+        setData(data.data)
+        setSavedAnalysis(analysisId)
+        addToast("Analysis loaded successfully!", "success")
+      } else {
+        addToast("No saved analysis found", "warning")
+      }
+    } catch (error) {
+      addToast("Failed to load analysis", "error")
+    }
+  }
+
+  // Add useEffect to save current analysis when it changes
+  useEffect(() => {
+    if (savedAnalysis) {
+      localStorage.setItem("currentAnalysis", savedAnalysis)
+    }
+  }, [savedAnalysis])
+
+  // Add useEffect to set isClient and handle click outside
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    setIsClient(true)
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const dropdown = document.querySelector(".platform-dropdown") // Use a class to select the dropdown element
+      const button = document.querySelector(".platform-dropdown-button") // Use a class to select the button element
+      if (dropdown && button && !dropdown.contains(event.target as Node) && !button.contains(event.target as Node)) {
+        setIsPlatformDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, []) // Empty dependency array to run only once on mount
+
+  // Add useEffect to handle initial load
+  useEffect(() => {
+    if (typeof window === "undefined") return // Ensure this runs only on the client
+
+    // Load analysis based on initialAnalysisId prop from URL
+    if (initialAnalysisId) {
+      loadAnalysis(initialAnalysisId)
+    } else {
+      // If no initialAnalysisId, try loading the last saved analysis from localStorage
+      const savedAnalysisId = localStorage.getItem("currentAnalysis")
+      if (savedAnalysisId) {
+        loadAnalysis(savedAnalysisId)
+      }
+    }
+
+    // Apply initial props from URL (these will override localStorage if both exist)
+    if (initialPlatform !== undefined) setSelectedPlatform(initialPlatform)
+    if (initialTimeRange !== undefined) setSelectedTimeRange(initialTimeRange)
+    if (initialRealtime !== undefined) setIsRealTimeActive(initialRealtime)
+    if (initialTheme !== undefined) setIsDarkMode(initialTheme)
+  }, [initialAnalysisId, initialPlatform, initialTimeRange, initialRealtime, initialTheme])
+
+  const filteredData = data.slice(selectedTimeRange.startIndex, selectedTimeRange.endIndex + 1)
+  const filteredSentimentData = sentimentData.slice(selectedTimeRange.startIndex, selectedTimeRange.endIndex + 1)
+
+  const calculatePlatformStats = () => {
+    if (filteredData.length === 0) return { engagement: 0, reach: 0, impressions: 0 }
+
+    if (selectedPlatform === "all") {
+      return {
+        engagement: filteredData.reduce((sum, item) => sum + item.totalEngagement, 0),
+        reach: filteredData.reduce((sum, item) => sum + item.reach, 0),
+        impressions: filteredData.reduce((sum, item) => sum + item.impressions, 0),
+      }
+    } else {
+      const platformKey = selectedPlatform as keyof Pick<
+        SocialData,
+        "Instagram" | "Twitter" | "Facebook" | "TikTok" | "LinkedIn"
+      >
+      const platformEngagement = filteredData.reduce((sum, item) => sum + (item[platformKey] as number), 0)
+      const totalEngagement = filteredData.reduce((sum, item) => sum + item.totalEngagement, 0)
+      const platformRatio = totalEngagement > 0 ? platformEngagement / totalEngagement : 0
+
+      return {
+        engagement: platformEngagement,
+        reach: Math.round(filteredData.reduce((sum, item) => sum + item.reach, 0) * platformRatio),
+        impressions: Math.round(filteredData.reduce((sum, item) => sum + item.impressions, 0) * platformRatio),
+      }
+    }
+  }
+
+  const platformStats = calculatePlatformStats()
+  const avgSentiment =
+    filteredSentimentData.length > 0
+      ? filteredSentimentData.reduce((sum, item) => sum + item.sentiment_score, 0) / filteredSentimentData.length
+      : 0
+
+  const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div
+          className={`${isDarkMode ? "bg-slate-900/95 text-white border-cyan-400/30" : "bg-white/95 text-gray-900 border-blue-400/30"} backdrop-blur-xl border rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-2xl ${isDarkMode ? "shadow-cyan-400/10" : "shadow-blue-400/10"}`}
+        >
+          <p className={`${isDarkMode ? "text-cyan-400" : "text-blue-600"} font-bold text-sm sm:text-lg mb-1 sm:mb-2`}>
+            {label}
+          </p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="font-semibold text-xs sm:text-base">
+              {entry.name}: {entry.value?.toLocaleString()}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
+
+  const statsConfig: StatCard[] = [
+    {
+      title: selectedPlatform === "all" ? "Total Engagement" : `${selectedPlatform} Engagement`,
+      value: platformStats.engagement,
+      color: "cyan",
+      change: "+12.5%",
+      icon: <PlaceholderIcon text="❤" bgColor="bg-red-500" textColor="text-white" className="w-4 h-4 sm:w-6 sm:h-6" />,
+    },
+    {
+      title: selectedPlatform === "all" ? "Total Reach" : `${selectedPlatform} Reach`,
+      value: platformStats.reach,
+      color: "emerald",
+      change: "+8.2%",
+      icon: (
+        <PlaceholderIcon text="👥" bgColor="bg-green-500" textColor="text-white" className="w-4 h-4 sm:w-6 sm:h-6" />
+      ),
+    },
+    {
+      title: selectedPlatform === "all" ? "Total Impressions" : `${selectedPlatform} Impressions`,
+      value: platformStats.impressions,
+      color: "violet",
+      change: "+15.1%",
+      icon: (
+        <PlaceholderIcon text="👁" bgColor="bg-purple-500" textColor="text-white" className="w-4 h-4 sm:w-6 sm:h-6" />
+      ),
+    },
+    {
+      title: "Avg Sentiment",
+      value: avgSentiment.toFixed(2),
+      color: "rose",
+      change: avgSentiment >= 0 ? "+0.3" : "-0.3",
+      icon: (
+        <PlaceholderIcon text="📊" bgColor="bg-pink-500" textColor="text-white" className="w-4 h-4 sm:w-6 sm:h-6" />
+      ),
+    },
+  ]
+
+  const getStatColorClasses = (color: StatCard["color"]) => {
+    if (isDarkMode) {
+      const colorMap = {
+        cyan: "from-cyan-500/20 to-cyan-600/20 border-cyan-400/30 text-cyan-400",
+        emerald: "from-emerald-500/20 to-emerald-600/20 border-emerald-400/30 text-emerald-400",
+        violet: "from-violet-500/20 to-violet-600/20 border-violet-400/30 text-violet-400",
+        rose: "from-rose-500/20 to-rose-600/20 border-rose-400/30 text-rose-400",
+      }
+      return colorMap[color]
+    } else {
+      const colorMap = {
+        cyan: "from-blue-50 to-blue-100 border-blue-200 text-blue-700",
+        emerald: "from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700",
+        violet: "from-violet-50 to-violet-100 border-violet-200 text-violet-700",
+        rose: "from-rose-50 to-rose-100 border-rose-200 text-rose-700",
+      }
+      return colorMap[color]
+    }
+  }
+
+  // Update window resize handler
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth)
+    }
+
+    // Set initial width
+    handleResize()
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  // Replace all window.innerWidth checks with windowWidth state
+  const isMobile = windowWidth < 640
+  const isTablet = windowWidth < 1024
+
+  return (
+    <div className={`min-h-screen ${theme.bg} ${theme.text} font-inter transition-all duration-500`}>
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 space-y-1 sm:space-y-2 z-[999999]">
+        {toasts.slice(0, 1).map((toast) => (
+          <div
+            key={toast.id}
+            className={`backdrop-blur-xl border rounded-xl sm:rounded-2xl px-3 py-2 sm:px-6 sm:py-4 shadow-2xl transform transition-all duration-500 animate-fade-in max-w-[280px] sm:max-w-none ${
+              toast.type === "success"
+                ? `${isDarkMode ? "bg-emerald-900/90 border-emerald-400/50 text-emerald-300" : "bg-emerald-50/90 border-emerald-400/50 text-emerald-700"}`
+                : toast.type === "error"
+                  ? `${isDarkMode ? "bg-red-900/90 border-red-400/50 text-red-300" : "bg-red-50/90 border-red-400/50 text-red-700"}`
+                  : toast.type === "warning"
+                    ? `${isDarkMode ? "bg-amber-900/90 border-amber-400/50 text-amber-300" : "bg-amber-50/90 border-amber-400/50 text-amber-700"}`
+                    : `${isDarkMode ? "bg-blue-900/90 border-blue-400/50 text-blue-300" : "bg-blue-50/90 border-blue-400/50 text-blue-700"}`
+            }`}
+          >
+            <p className="text-xs sm:text-sm font-semibold break-words">{toast.message}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className={`absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 lg:w-96 lg:h-96 ${isDarkMode ? "bg-cyan-500/5" : "bg-blue-500/10"} rounded-full blur-3xl animate-pulse`}
+        />
+        <div
+          className={`absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 lg:w-96 lg:h-96 ${isDarkMode ? "bg-violet-500/5" : "bg-purple-500/10"} rounded-full blur-3xl animate-pulse`}
+          style={{ animationDelay: "2s" }}
+        />
+        <div
+          className={`absolute top-3/4 left-1/2 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 ${isDarkMode ? "bg-emerald-500/5" : "bg-green-500/10"} rounded-full blur-3xl animate-pulse`}
+          style={{ animationDelay: "4s" }}
+        />
+      </div>
+
+      <header className={`sticky top-0 z-[9999] ${theme.header} shadow-2xl transition-all duration-500`}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-[9999]" style={{ overflow: "visible" }}>
+          <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20" style={{ overflow: "visible" }}>
+            <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-6 min-w-0 flex-1">
+              <div
+                className={`p-1.5 sm:p-2 lg:p-3 bg-gradient-to-r ${isDarkMode ? "from-cyan-500/20 to-violet-500/20 border-cyan-400/30" : "from-blue-500/20 to-purple-500/20 border-blue-400/30"} rounded-lg sm:rounded-xl lg:rounded-2xl border`}
+              >
+                <PlaceholderIcon
+                  text="📊"
+                  bgColor={isDarkMode ? "bg-cyan-500" : "bg-blue-500"}
+                  textColor="text-white"
+                  className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6`}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h1
+                  className={`text-base sm:text-lg lg:text-2xl font-black bg-gradient-to-r ${isDarkMode ? "from-cyan-400 via-violet-400 to-rose-400" : "from-blue-600 via-purple-600 to-pink-600"} bg-clip-text text-transparent truncate`}
+                >
+                  Social Analytics Hub
+                </h1>
+                <p className={`text-xs sm:text-sm ${theme.muted} font-medium hidden sm:block`}>
+                  Real-time social media insights
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4"
+              style={{ overflow: "visible", position: "relative", zIndex: 9999 }}
+            >
+              {/* Platform Dropdown - Hidden on mobile, handled in overlay */}
+              <div className="relative hidden sm:block platform-dropdown">
+                <button
+                  onClick={() => setIsPlatformDropdownOpen(!isPlatformDropdownOpen)}
+                  className={`${theme.input} rounded-lg sm:rounded-xl lg:rounded-2xl px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 lg:py-2.5 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 ${isDarkMode ? "focus:ring-cyan-400/50 focus:border-cyan-400/50 hover:bg-slate-700/80" : "focus:ring-blue-400/50 focus:border-blue-400/50 hover:bg-gray-200/80"} transition-all duration-300 appearance-none cursor-pointer w-32 sm:w-36 lg:w-48 pr-6 sm:pr-8 lg:pr-10 flex items-center justify-between platform-dropdown-button`}
+                >
+                  <span className="truncate">{selectedPlatform === "all" ? "All Platforms" : selectedPlatform}</span>
+                  <svg
+                    className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-300 ${isPlatformDropdownOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isPlatformDropdownOpen && (
+                  <div
+                    className={`absolute top-full left-0 mt-1 w-full ${theme.card} rounded-lg sm:rounded-xl lg:rounded-2xl border shadow-2xl z-[99999] overflow-hidden`}
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: "0",
+                      marginTop: "4px",
+                    }}
+                  >
+                    {[
+                      { value: "all", label: "All Platforms" },
+                      { value: "Instagram", label: "Instagram", icon: platformIcons.Instagram },
+                      { value: "Twitter", label: "Twitter", icon: platformIcons.Twitter },
+                      { value: "Facebook", label: "Facebook", icon: platformIcons.Facebook },
+                      { value: "TikTok", label: "TikTok", icon: platformIcons.TikTok },
+                      { value: "LinkedIn", label: "LinkedIn", icon: platformIcons.LinkedIn },
+                    ].map((platform, index) => (
+                      <button
+                        key={platform.value}
+                        onClick={() => {
+                          setSelectedPlatform(platform.value as Platform)
+                          setIsPlatformDropdownOpen(false)
+                          addToast(`Platform filter: ${platform.label}`, "info")
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-semibold ${
+                          selectedPlatform === platform.value
+                            ? isDarkMode
+                              ? "bg-slate-700 text-cyan-400"
+                              : "bg-blue-50 text-blue-600"
+                            : isDarkMode
+                              ? "hover:bg-slate-700/50 text-white"
+                              : "hover:bg-gray-50 text-gray-900"
+                        } ${index !== 0 ? (isDarkMode ? "border-t border-white/10" : "border-t border-gray-200") : ""}`}
+                      >
+                        {platform.icon && <span className="text-current">{platform.icon}</span>}
+                        <span>{platform.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Theme Toggle - Hidden on mobile, handled in overlay */}
+              <button
+                onClick={() => {
+                  setIsDarkMode(!isDarkMode)
+                }}
+                className={`bg-gradient-to-r ${isDarkMode ? "from-yellow-500/20 to-orange-500/20 border-yellow-400/50 hover:shadow-yellow-400/25" : "from-slate-500/20 to-slate-600/20 border-slate-400/50 hover:shadow-slate-400/25"} backdrop-blur-xl border rounded-lg sm:rounded-xl lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 transition-all duration-300 hover:scale-110 hover:shadow-lg cursor-pointer theme-toggle-button`}
+              >
+                {isDarkMode ? (
+                  <PlaceholderIcon
+                    text="☀"
+                    bgColor="bg-yellow-500"
+                    textColor="text-white"
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5"
+                  />
+                ) : (
+                  <PlaceholderIcon
+                    text="🌙"
+                    bgColor="bg-slate-600"
+                    textColor="text-white"
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5"
+                  />
+                )}
+              </button>
+
+              {/* Shareable Link Button - Hidden on mobile, handled in overlay */}
+              <button
+                onClick={generateShareableLink}
+                className={`bg-gradient-to-r ${isDarkMode ? "from-cyan-500/20 to-cyan-600/20 hover:from-cyan-500/30 hover:to-cyan-600/30 border-cyan-400/50 hover:shadow-cyan-400/25" : "from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border-blue-400/50 hover:shadow-blue-400/25"} backdrop-blur-xl border rounded-lg sm:rounded-xl lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 transition-all duration-300 hover:scale-110 hover:shadow-lg cursor-pointer hidden sm:block`} // Changed to hidden sm:block
+                aria-label="Generate Shareable Link"
+              >
+                <PlaceholderIcon
+                  text="🔗"
+                  bgColor="bg-cyan-500"
+                  textColor="text-white"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5"
+                />
+              </button>
+
+              {/* Real-time Toggle - Hidden on mobile, handled in overlay */}
+              <button
+                onClick={() => {
+                  setIsRealTimeActive(!isRealTimeActive)
+                  addToast(`Real-time ${!isRealTimeActive ? "on" : "off"}`, "info")
+                }}
+                className={`hidden sm:block backdrop-blur-xl border rounded-lg sm:rounded-xl lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 transition-all duration-300 hover:scale-110 font-semibold cursor-pointer ${
+                  isRealTimeActive
+                    ? `bg-gradient-to-r ${isDarkMode ? "from-emerald-500/20 to-emerald-600/20 border-emerald-400/50 text-emerald-400 hover:shadow-emerald-400/25" : "from-green-500/20 to-green-600/20 border-green-400/50 text-green-600 hover:shadow-green-400/25"}`
+                    : `bg-gradient-to-r ${isDarkMode ? "from-slate-500/20 to-slate-600/20 border-slate-400/50 text-slate-400 hover:shadow-slate-400/25" : "from-gray-500/20 to-gray-600/20 border-gray-400/50 text-gray-600 hover:shadow-gray-400/25"}`
+                }`}
+              >
+                <PlaceholderIcon
+                  text={isRealTimeActive ? "⏺" : "⏹"}
+                  bgColor={isRealTimeActive ? "bg-emerald-500" : "bg-slate-500"}
+                  textColor="text-white"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5"
+                />
+              </button>
+
+              {/* Save/Load Menu - Hidden on mobile, handled in overlay */}
+              <div className="relative group hidden sm:block" style={{ zIndex: 99999, position: "relative" }}>
+                <div
+                  className={`bg-gradient-to-r ${isDarkMode ? "from-violet-500/20 to-violet-600/20 hover:from-violet-500/30 hover:to-violet-600/30 border-violet-400/50 hover:shadow-violet-400/25" : "from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border-purple-400/50 hover:shadow-purple-400/25"} backdrop-blur-xl border rounded-lg sm:rounded-xl lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 transition-all duration-300 hover:scale-110 hover:shadow-lg`}
+                >
+                  <PlaceholderIcon
+                    text="💾"
+                    bgColor="bg-violet-500"
+                    textColor="text-white"
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5"
+                  />
+                </div>
+                <div
+                  className={`absolute top-full right-0 mt-1 lg:mt-2 ${theme.card} rounded-lg sm:rounded-xl lg:rounded-2xl border shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto min-w-[140px] lg:min-w-[200px]`}
+                  style={{
+                    zIndex: "2147483647",
+                    position: "absolute",
+                    top: "100%",
+                    right: "0",
+                    marginTop: "4px",
+                  }}
+                >
+                  <button
+                    onClick={() => handleDownload("json")}
+                    className={`w-full text-left px-3 lg:px-4 py-1.5 lg:py-2 ${isDarkMode ? "hover:bg-slate-800/50 text-white" : "hover:bg-gray-100/50 text-gray-900"} rounded-t-lg sm:rounded-t-xl lg:rounded-t-2xl transition-colors duration-200 text-xs lg:text-sm font-semibold cursor-pointer flex items-center space-x-2`}
+                  >
+                    <PlaceholderIcon
+                      text="📥"
+                      bgColor="bg-cyan-500"
+                      textColor="text-white"
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                    />
+                    <span>Download JSON</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const confirmLoad = window.confirm("Load default dashboard settings?")
+                      if (confirmLoad) {
+                        loadAnalysis("dashboard-001")
+                      }
+                    }}
+                    className={`w-full text-left px-3 lg:px-4 py-1.5 lg:py-2 ${isDarkMode ? "hover:bg-slate-800/50 text-white" : "hover:bg-gray-100/50 text-gray-900"} transition-colors duration-200 text-xs lg:text-sm font-semibold cursor-pointer flex items-center space-x-2`}
+                  >
+                    <PlaceholderIcon
+                      text="📂"
+                      bgColor="bg-blue-500"
+                      textColor="text-white"
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                    />
+                    <span>Load Default</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const confirmReset = window.confirm("Reset dashboard to default settings?")
+                      if (confirmReset) {
+                        resetDashboard()
+                      }
+                    }}
+                    className={`w-full text-left px-3 lg:px-4 py-1.5 lg:py-2 ${isDarkMode ? "hover:bg-slate-800/50 text-white" : "hover:bg-gray-100/50 text-gray-900"} rounded-b-lg sm:rounded-b-xl lg:rounded-b-2xl transition-colors duration-200 text-xs lg:text-sm font-semibold cursor-pointer flex items-center space-x-2`}
+                  >
+                    <PlaceholderIcon
+                      text="🔄"
+                      bgColor="bg-orange-500"
+                      textColor="text-white"
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                    />
+                    <span>Reset</span>
+                  </button>
+                </div>
+              </div>
+              {/* Mobile Menu Button - Only visible on mobile */}
+              <button
+                onClick={() => setIsMobileOverlayOpen(true)}
+                className={`sm:hidden bg-gradient-to-r ${isDarkMode ? "from-slate-500/20 to-slate-600/20 border-slate-400/50" : "from-gray-500/20 to-gray-600/20 border-gray-400/50"} backdrop-blur-xl border rounded-lg p-1.5 transition-all duration-300 hover:scale-110 cursor-pointer`}
+              >
+                <PlaceholderIcon text="☰" bgColor="bg-slate-500" textColor="text-white" className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-[1] max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6">
+        {selectedPlatform !== "all" && (
+          <div
+            className={`mb-3 sm:mb-4 lg:mb-6 bg-gradient-to-r ${isDarkMode ? "from-slate-800/60 to-slate-900/60" : "from-white/60 to-gray-50/60"} backdrop-blur-xl border-2 border-dashed rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 transition-all duration-500`}
+            style={{ borderColor: platformColors[selectedPlatform] + "50" }}
+          >
+            <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
+                <div className="flex items-center space-x-1.5 sm:space-x-2 lg:space-x-3">
+                  <div
+                    className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 rounded-full animate-pulse shadow-lg"
+                    style={{ backgroundColor: platformColors[selectedPlatform] }}
+                  />
+                  <div>
+                    <h3
+                      className="text-base sm:text-lg lg:text-xl font-black"
+                      style={{ color: platformColors[selectedPlatform] }}
+                    >
+                      {selectedPlatform} Analytics
+                    </h3>
+                    <p className={`${theme.muted} text-xs sm:text-sm`}>
+                      Filtered view • {platformStats.engagement.toLocaleString()} engagement
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedPlatform("all")
+                  addToast("Filter cleared", "info")
+                }}
+                className={`${isDarkMode ? "bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white" : "bg-gray-200/50 hover:bg-gray-300/50 text-gray-600 hover:text-gray-800"} px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-md sm:rounded-lg lg:rounded-xl transition-all duration-300 flex items-center space-x-1 sm:space-x-2 cursor-pointer text-xs sm:text-sm`}
+              >
+                <PlaceholderIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4" />
+                <span className="font-semibold">Clear</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8">
+          {statsConfig.map((stat, index) => (
+            <div
+              key={`${selectedPlatform}-${index}`}
+              className={`bg-gradient-to-br ${getStatColorClasses(stat.color)} backdrop-blur-2xl border rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 ${theme.cardHover} transition-all duration-500 hover:scale-105 hover:shadow-2xl group ${isAnimated ? "animate-fade-in" : ""} cursor-pointer`}
+              style={{ animationDelay: `${index * 150}ms` }}
+              onClick={() =>
+                addToast(
+                  `${stat.title}: ${typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}`,
+                  "info",
+                )
+              }
+            >
+              <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
+                <div
+                  className={`p-1.5 sm:p-2 lg:p-3 bg-gradient-to-r ${getStatColorClasses(stat.color)} rounded-lg sm:rounded-xl lg:rounded-2xl group-hover:scale-110 transition-transform duration-300`}
+                >
+                  {stat.icon}
+                </div>
+                <div className="text-right">
+                  <p
+                    className={`text-xs sm:text-sm lg:text-base font-bold ${stat.color === "cyan" ? (isDarkMode ? "text-cyan-400" : "text-blue-700") : stat.color === "emerald" ? (isDarkMode ? "text-emerald-400" : "text-emerald-700") : stat.color === "violet" ? (isDarkMode ? "text-violet-400" : "text-violet-700") : isDarkMode ? "text-rose-400" : "text-rose-700"}`}
+                  >
+                    {stat.change}
+                  </p>
+                  <p className={`text-xs ${theme.muted} font-medium`}>vs last</p>
+                </div>
+              </div>
+              <div>
+                <p
+                  className={`${isDarkMode ? "text-slate-300" : "text-gray-700"} text-xs sm:text-sm lg:text-base font-semibold mb-1 sm:mb-2 line-clamp-2`}
+                >
+                  {stat.title}
+                </p>
+                <p
+                  className={`text-lg sm:text-xl lg:text-2xl font-black ${theme.text}`}
+                  key={`value-${selectedPlatform}-${index}`}
+                >
+                  {typeof stat.value === "number" && stat.value > 1000
+                    ? stat.value > 1000000
+                      ? `${(stat.value / 1000000).toFixed(1)}M`
+                      : `${(stat.value / 1000).toFixed(0)}K`
+                    : stat.value}
+                </p>
+                {selectedPlatform !== "all" && index < 3 && (
+                  <p className={`text-xs ${theme.muted} mt-1 hidden sm:block`}>Platform-specific</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 mb-8 sm:mb-12"></div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 mb-8 sm:mb-12">
+          <div
+            className={`${theme.card} ${theme.cardHover} rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 transition-all duration-500 shadow-2xl`}
+          >
+            <div className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8 flex-wrap gap-3">
+              <div>
+                <h2 className={`text-lg sm:text-xl lg:text-2xl font-black ${theme.accent} mb-1 sm:mb-2`}>
+                  Platform Performance
+                </h2>
+                <p className={`${theme.muted} font-medium text-xs sm:text-sm`}>Interactive timeline</p>
+              </div>
+              <div className="hidden lg:flex flex-wrap gap-2 sm:gap-3">
+                {selectedPlatform === "all" ? (
+                  Object.entries(platformColors).map(([platform, color]) => (
+                    <div
+                      key={platform}
+                      className={`flex items-center space-x-1 sm:space-x-2 ${isDarkMode ? "bg-slate-800/50" : "bg-gray-100/50"} rounded-full px-2 sm:px-3 py-1 cursor-pointer hover:scale-105 transition-transform`}
+                      onClick={() => {
+                        setSelectedPlatform(platform as Platform)
+                        addToast(`${platform} view`, "info")
+                      }}
+                    >
+                      <div
+                        className="w-2 h-2 sm:w-3 sm:h-3 rounded-full animate-pulse"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-700"} font-semibold`}>
+                        {platform}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div
+                    className={`flex items-center space-x-2 ${isDarkMode ? "bg-slate-800/50" : "bg-gray-100/50"} rounded-full px-3 sm:px-4 py-1 sm:py-2 cursor-pointer hover:scale-105 transition-transform`}
+                    onClick={() => {
+                      setSelectedPlatform("all")
+                      addToast("All platforms view", "info")
+                    }}
+                  >
+                    <div
+                      className="w-3 h-3 sm:w-4 sm:h-4 rounded-full animate-pulse"
+                      style={{ backgroundColor: platformColors[selectedPlatform] }}
+                    />
+                    <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"} font-bold`}>
+                      {selectedPlatform}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={isMobile ? 250 : isTablet ? 300 : 350}>
+              <LineChart
+                data={filteredData}
+                onMouseMove={handleMouseMove}
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#334155" : "#e5e7eb"} strokeOpacity={0.5} />
+                <XAxis
+                  dataKey="date"
+                  stroke={isDarkMode ? "#94a3b8" : "#6b7280"}
+                  fontSize={isMobile ? 10 : 12}
+                  fontWeight={600}
+                  interval={isMobile ? 9 : 6}
+                  angle={-30}
+                  textAnchor="end"
+                  height={80}
+                  tick={{ dy: 10 }}
+                  padding={{ left: 20, right: 20 }}
+                />
+                <YAxis
+                  stroke={isDarkMode ? "#94a3b8" : "#6b7280"}
+                  fontSize={isMobile ? 10 : 12}
+                  fontWeight={600}
+                  tickFormatter={(value: number) =>
+                    isMobile ? `${(value / 1000).toFixed(0)}K` : value.toLocaleString()
+                  }
+                />
+                <Tooltip content={<CustomTooltip />} />
+
+                {selectedPlatform === "all" ? (
+                  Object.entries(platformColors).map(([platform, color]) => (
+                    <Line
+                      key={platform}
+                      type="monotone"
+                      dataKey={platform}
+                      stroke={color}
+                      strokeWidth={isMobile ? 2 : 3}
+                      dot={false}
+                      activeDot={{
+                        r: isMobile ? 6 : 8,
+                        stroke: color,
+                        strokeWidth: isMobile ? 2 : 3,
+                        fill: isDarkMode ? "white" : "#ffffff",
+                      }}
+                    />
+                  ))
+                ) : (
+                  <Line
+                    type="monotone"
+                    dataKey={selectedPlatform}
+                    stroke={platformColors[selectedPlatform]}
+                    strokeWidth={isMobile ? 3 : 4}
+                    dot={{ r: isMobile ? 3 : 4, fill: platformColors[selectedPlatform] }}
+                    activeDot={{
+                      r: isMobile ? 8 : 10,
+                      stroke: platformColors[selectedPlatform],
+                      strokeWidth: isMobile ? 3 : 4,
+                      fill: isDarkMode ? "white" : "#ffffff",
+                    }}
+                  />
+                )}
+
+                {campaigns.map((campaign, index) => (
+                  <ReferenceLine
+                    key={index}
+                    x={campaign.date}
+                    stroke={campaign.color}
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    label={{
+                      value: isMobile ? campaign.name.substring(0, 8) + "..." : campaign.name,
+                      position: index % 2 === 0 ? "top" : "bottom",
+                      fill: campaign.color,
+                      fontWeight: "bold",
+                      fontSize: isMobile ? 10 : 12,
+                    }}
+                  />
+                ))}
+
+                {cursorPosition && (
+                  <ReferenceLine
+                    x={cursorPosition}
+                    stroke={isDarkMode ? "#06b6d4" : "#2563eb"}
+                    strokeDasharray="2 2"
+                    strokeWidth={2}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div
+            className={`${theme.card} ${theme.cardHover} rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 transition-all duration-500 shadow-2xl sentiment-analysis-section`}
+          >
+            <div className="mb-4 sm:mb-6 lg:mb-8">
+              <h2
+                className={`text-lg sm:text-xl lg:text-2xl font-black ${isDarkMode ? "text-emerald-400" : "text-green-600"} mb-1 sm:mb-2`}
+              >
+                Sentiment Analysis
+              </h2>
+              <p className={`${theme.muted} font-medium text-xs sm:text-sm`}>Real-time mood tracking</p>
+            </div>
+
+            <ResponsiveContainer
+              width="100%"
+              height={window.innerWidth < 640 ? 250 : window.innerWidth < 1024 ? 300 : 350}
+            >
+              <AreaChart
+                data={filteredSentimentData}
+                onMouseMove={handleMouseMove}
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#334155" : "#e5e7eb"} strokeOpacity={0.5} />
+                <XAxis
+                  dataKey="date"
+                  stroke={isDarkMode ? "#94a3b8" : "#6b7280"}
+                  fontSize={window.innerWidth < 640 ? 10 : 12}
+                  fontWeight={600}
+                  interval={window.innerWidth < 640 ? 9 : 6}
+                  angle={-30}
+                  textAnchor="end"
+                  height={80}
+                  tick={{ dy: 10 }}
+                  padding={{ left: 20, right: 20 }}
+                />
+                <YAxis
+                  stroke={isDarkMode ? "#94a3b8" : "#6b7280"}
+                  fontSize={window.innerWidth < 640 ? 10 : 12}
+                  fontWeight={600}
+                />
+                <Tooltip content={<CustomTooltip />} />
+
+                <Area
+                  type="monotone"
+                  dataKey="positive"
+                  stackId="1"
+                  stroke="#10b981"
+                  fill="#10b981"
+                  fillOpacity={0.4}
+                />
+                <Area type="monotone" dataKey="neutral" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.4} />
+                <Area
+                  type="monotone"
+                  dataKey="negative"
+                  stackId="1"
+                  stroke="#f43f5e"
+                  fill="#f43f5e"
+                  fillOpacity={0.4}
+                />
+
+                {cursorPosition && (
+                  <ReferenceLine
+                    x={cursorPosition}
+                    stroke={isDarkMode ? "#06b6d4" : "#2563eb"}
+                    strokeDasharray="2 2"
+                    strokeWidth={2}
+                  />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div
+          className={`${theme.card} ${theme.cardHover} rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 transition-all duration-500 shadow-2xl mb-6 sm:mb-8 campaign-timeline-section`}
+        >
+          <div className="mb-4 sm:mb-6 lg:mb-8">
+            <h2
+              className={`text-lg sm:text-xl lg:text-2xl font-black ${isDarkMode ? "text-violet-400" : "text-purple-600"} mb-1 sm:mb-2`}
+            >
+              Campaign Timeline
+            </h2>
+            <p className={`${theme.muted} font-medium text-xs sm:text-sm`}>Active marketing initiatives</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {campaigns.map((campaign, index) => (
+              <div
+                key={index}
+                className={`${isDarkMode ? "bg-slate-800/60" : "bg-gray-50/60"} backdrop-blur-xl border ${isDarkMode ? "border-white/10 hover:border-white/30" : "border-gray-200/50 hover:border-gray-300/50"} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:scale-105 group cursor-pointer`}
+                onClick={() => addToast(`${campaign.name} - ${campaign.type} (${campaign.date})`, "info")}
+              >
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full animate-pulse group-hover:scale-125 transition-transform duration-300"
+                    style={{ backgroundColor: campaign.color }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-bold ${theme.text} text-sm sm:text-lg truncate`}>{campaign.name}</p>
+                    <p className={`text-xs sm:text-sm ${theme.muted} font-semibold`}>{campaign.date}</p>
+                    <p
+                      className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-500"} capitalize font-medium mt-1`}
+                    >
+                      {campaign.type}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          className={`${isDarkMode ? "bg-slate-900/40" : "bg-white/40"} backdrop-blur-xl border ${isDarkMode ? "border-white/10" : "border-gray-200/50"} rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center transition-all duration-500`}
+        >
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div
+              className="cursor-pointer hover:scale-105 transition-transform duration-300"
+              onClick={() => addToast(`Time range: ${filteredData.length} days`, "info")}
+            >
+              <p className={`${theme.muted} text-xs sm:text-sm`}>Time Range</p>
+              <p className={`${theme.text} font-bold text-sm sm:text-base`}>{filteredData.length} days</p>
+            </div>
+            <div
+              className="cursor-pointer hover:scale-105 transition-transform duration-300"
+              onClick={() => addToast(`Filter: ${selectedPlatform === "all" ? "All" : selectedPlatform}`, "info")}
+            >
+              <p className={`${theme.muted} text-xs sm:text-sm`}>Platform</p>
+              <p
+                className="font-bold text-sm sm:text-base"
+                style={{
+                  color:
+                    selectedPlatform !== "all" ? platformColors[selectedPlatform] : isDarkMode ? "#06b6d4" : "#2563eb",
+                }}
+              >
+                {selectedPlatform === "all" ? "All" : selectedPlatform}
+              </p>
+            </div>
+            <div
+              className="cursor-pointer hover:scale-105 transition-transform duration-300"
+              onClick={() => addToast(`Engagement: ${platformStats.engagement.toLocaleString()}`, "info")}
+            >
+              <p className={`${theme.muted} text-xs sm:text-sm`}>Engagement</p>
+              <p className={`${theme.text} font-bold text-sm sm:text-base`}>
+                {platformStats.engagement > 1000000
+                  ? `${(platformStats.engagement / 1000000).toFixed(1)}M`
+                  : `${(platformStats.engagement / 1000).toFixed(0)}K`}
+              </p>
+            </div>
+            <div
+              className="cursor-pointer hover:scale-105 transition-transform duration-300"
+              onClick={() =>
+                addToast(
+                  `Status: ${isWebSocketConnected ? "Live" : "Offline"}`,
+                  isWebSocketConnected ? "success" : "error",
+                )
+              }
+            >
+              <p className={`${theme.muted} text-xs sm:text-sm`}>Status</p>
+              <div className="flex items-center justify-center space-x-1 sm:space-x-2">
+                <div
+                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isWebSocketConnected ? (isDarkMode ? "bg-emerald-400" : "bg-green-500") : isDarkMode ? "bg-red-400" : "bg-red-500"} ${isWebSocketConnected ? "animate-pulse" : ""}`}
+                />
+                <p
+                  className={`font-bold text-xs sm:text-sm ${isWebSocketConnected ? (isDarkMode ? "text-emerald-400" : "text-green-600") : isDarkMode ? "text-red-400" : "text-red-600"}`}
+                >
+                  {isWebSocketConnected ? "Live" : "Offline"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Replace the entire footer element with the updated version */}
+      <footer className={`relative z-[1] ${theme.footer} mt-8 sm:mt-12 lg:mt-16 transition-all duration-500`}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="py-4 sm:py-6">
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center mb-4 sm:mb-6">
+              {[
+                { label: "Uptime", value: "99.9%", color: isDarkMode ? "text-emerald-400" : "text-green-600" },
+                { label: "Speed", value: "<50ms", color: theme.accent },
+                { label: "Data", value: "10M+", color: isDarkMode ? "text-violet-400" : "text-purple-600" },
+                { label: "Users", value: "50K+", color: isDarkMode ? "text-rose-400" : "text-pink-600" },
+              ].map((stat, index) => (
+                <button
+                  key={index}
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className="space-y-0.5 transition-transform duration-300 hover:scale-105 cursor-pointer"
+                >
+                  <p className={`font-bold text-xs sm:text-sm ${stat.color}`}>{stat.value}</p>
+                  <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-500"} font-medium`}>
+                    {stat.label}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            {/* Main Footer Content */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div className="space-y-2 sm:space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`p-1 sm:p-1.5 bg-gradient-to-r ${isDarkMode ? "from-cyan-500/20 to-violet-500/20 border-cyan-400/30" : "from-blue-500/20 to-purple-500/20 border-blue-400/30"} rounded-lg border`}
+                  >
+                    <PlaceholderIcon
+                      text="📊"
+                      bgColor={isDarkMode ? "bg-cyan-500" : "bg-blue-500"}
+                      textColor="text-white"
+                      className="w-3 h-3 sm:w-4 sm:h-4"
+                    />
+                  </div>
+                  <h3
+                    className={`text-xs sm:text-sm font-black bg-gradient-to-r ${isDarkMode ? "from-cyan-400 to-violet-400" : "from-blue-600 to-purple-600"} bg-clip-text text-transparent`}
+                  >
+                    Social Analytics Hub
+                  </h3>
+                </div>
+                <p className={`${theme.muted} text-xs leading-relaxed`}>
+                  Empowering businesses with real-time social media insights and analytics.
+                </p>
+              </div>
+
+              <div className="space-y-2 sm:space-y-3 text-center">
+                <h4 className={`text-xs sm:text-sm font-bold ${theme.text}`}>Quick Links</h4>
+                <div className="space-y-2">
+                  {[
+                    {
+                      name: "Real-time Monitoring",
+                      working: true,
+                      onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }),
+                    },
+                    {
+                      name: "Sentiment Analysis",
+                      working: true,
+                      onClick: () => {
+                        const sentimentSection = document.querySelector(".sentiment-analysis-section")
+                        if (sentimentSection) {
+                          const headerOffset = 100
+                          const elementPosition = sentimentSection.getBoundingClientRect().top
+                          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+                          window.scrollTo({
+                            top: offsetPosition,
+                            behavior: "smooth",
+                          })
+                        }
+                      },
+                    },
+                    {
+                      name: "Campaign Tracking",
+                      working: true,
+                      onClick: () => {
+                        const campaignSection = document.querySelector(".campaign-timeline-section")
+                        if (campaignSection) {
+                          const headerOffset = 100
+                          const elementPosition = campaignSection.getBoundingClientRect().top
+                          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+                          window.scrollTo({
+                            top: offsetPosition,
+                            behavior: "smooth",
+                          })
+                        }
+                      },
+                    },
+                  ].map((feature, index) => (
+                    <button
+                      key={index}
+                      onClick={feature.onClick}
+                      className="flex items-center justify-center space-x-1.5 w-full group cursor-pointer py-1"
+                    >
+                      <div
+                        className={`w-1 h-1 sm:w-1.5 sm:h-1.5 ${feature.working ? (isDarkMode ? "bg-emerald-400" : "bg-green-500") : isDarkMode ? "bg-amber-400" : "bg-amber-500"} rounded-full ${feature.working ? "animate-pulse" : ""}`}
+                      />
+                      <span
+                        className={`${theme.muted} text-xs font-medium ${isDarkMode ? "group-hover:text-cyan-400" : "group-hover:text-blue-600"} transition-colors`}
+                      >
+                        {feature.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 sm:space-y-3 text-center">
+                <h4 className={`text-xs sm:text-sm font-bold ${theme.text}`}>Status</h4>
+                <div className="flex items-center justify-center space-x-1.5">
+                  <div
+                    className={`w-1 h-1 sm:w-1.5 sm:h-1.5 ${isDarkMode ? "bg-emerald-400" : "bg-green-500"} rounded-full animate-pulse`}
+                  />
+                  <span className={`${isDarkMode ? "text-emerald-400" : "text-green-600"} text-xs font-semibold`}>
+                    All Systems OK
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`border-t ${isDarkMode ? "border-white/5" : "border-gray-200/30"} py-2 sm:py-3 transition-all duration-500`}
+          >
+            <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 gap-3">
+              <div
+                className={`flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-3 text-xs ${theme.muted} text-center sm:text-left`}
+              >
+                <div className="flex items-center space-x-2 sm:space-x-3">{/* Privacy and Terms links removed */}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={`absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r ${isDarkMode ? "from-cyan-500/50 via-violet-500/50 to-rose-500/50" : "from-blue-500/50 via-purple-500/50 to-pink-500/50"}`}
+        />
+      </footer>
+
+      {isMobileOverlayOpen && (
+        <div className="fixed inset-0 lg:hidden z-[99998]">
+          <div
+            className={`absolute inset-0 ${isDarkMode ? "bg-black/60" : "bg-gray-900/60"} backdrop-blur-sm`}
+            onClick={() => setIsMobileOverlayOpen(false)}
+          />
+          <div
+            className={`absolute bottom-0 left-0 right-0 ${theme.overlay} rounded-t-2xl sm:rounded-t-3xl p-4 sm:p-6 lg:p-8 max-h-[85vh] overflow-y-auto`}
+          >
+            <div className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8">
+              <div>
+                <h3 className={`text-lg sm:text-xl font-black ${theme.accent}`}>Mobile Menu</h3>
+                <p className={`${theme.muted} font-medium text-sm`}>Quick actions & data</p>
+              </div>
+              <button
+                onClick={() => setIsMobileOverlayOpen(false)}
+                className={`${isDarkMode ? "bg-slate-800/80 border-white/20 hover:bg-slate-700/80" : "bg-gray-100/80 border-gray-300/50 hover:bg-gray-200/80"} backdrop-blur-xl border rounded-xl sm:rounded-2xl p-2 sm:p-3 transition-all duration-300 cursor-pointer`}
+              >
+                <PlaceholderIcon className={`w-5 h-5 sm:w-6 sm:h-6 ${theme.muted}`} />
+              </button>
+            </div>
+
+            <div className="mb-4 sm:mb-6">
+              <label className={`block text-sm font-semibold ${theme.text} mb-2`}>Platform Filter</label>
+              <div
+                className={`w-full border rounded-xl overflow-hidden ${isDarkMode ? "border-white/20 text-white" : "border-gray-300 text-gray-800"}`}
+              >
+                {[
+                  { value: "all", label: "All Platforms", icon: <PlaceholderIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
+                  {
+                    value: "Instagram",
+                    label: "Instagram",
+                    icon: <PlaceholderIcon className="w-4 h-4 sm:w-5 sm:h-5" />,
+                  },
+                  { value: "Twitter", label: "Twitter", icon: <PlaceholderIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
+                  { value: "Facebook", label: "Facebook", icon: <PlaceholderIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
+                  { value: "TikTok", label: "TikTok", icon: <PlaceholderIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
+                  { value: "LinkedIn", label: "LinkedIn", icon: <PlaceholderIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
+                ].map((platform, index) => (
+                  <button
+                    key={platform.value}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold ${
+                      selectedPlatform === platform.value
+                        ? isDarkMode
+                          ? "bg-slate-700 text-cyan-400"
+                          : "bg-blue-50 text-blue-600"
+                        : isDarkMode
+                          ? "bg-slate-800 hover:bg-slate-700 text-white"
+                          : "bg-white hover:bg-gray-50"
+                    } 
+                      ${index !== 0 ? (isDarkMode ? "border-t border-white/10" : "border-t border-gray-200") : ""}`}
+                    onClick={() => {
+                      setSelectedPlatform(platform.value as Platform)
+                      addToast(`Platform: ${platform.value === "all" ? "All" : platform.value}`, "info")
+                    }}
+                  >
+                    <span className="text-current">{platform.icon}</span>
+                    <span>{platform.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4 sm:mb-6">
+              {/* Real-time Toggle */}
+              <button
+                onClick={() => {
+                  setIsRealTimeActive(!isRealTimeActive)
+                  addToast(`Real-time ${!isRealTimeActive ? "on" : "off"}`, "info")
+                }}
+                className={`backdrop-blur-xl border rounded-xl p-3 transition-all duration-300 font-semibold cursor-pointer flex items-center justify-center gap-2 ${
+                  isRealTimeActive
+                    ? `bg-gradient-to-r ${isDarkMode ? "from-emerald-500/20 to-emerald-600/20 border-emerald-400/50 text-emerald-400" : "from-green-500/20 to-green-600/20 border-green-400/50 text-green-600"}`
+                    : `bg-gradient-to-r ${isDarkMode ? "from-slate-500/20 to-slate-600/20 border-slate-400/50 text-slate-400" : "from-gray-500/20 to-gray-600/20 border-gray-400/50 text-gray-600"}`
+                }`}
+              >
+                <PlaceholderIcon
+                  text={isRealTimeActive ? "⏺" : "⏹"}
+                  bgColor={isRealTimeActive ? "bg-emerald-500" : "bg-slate-500"}
+                  textColor="text-white"
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Real-time</span>
+              </button>
+
+              {/* Theme Toggle */}
+              <button
+                onClick={() => {
+                  setIsDarkMode(!isDarkMode)
+                }}
+                className={`bg-gradient-to-r ${isDarkMode ? "from-yellow-500/20 to-orange-500/20 border-yellow-400/50" : "from-slate-500/20 to-slate-600/20 border-slate-400/50"} backdrop-blur-xl border rounded-xl p-3 transition-all duration-300 cursor-pointer flex items-center justify-center gap-2`}
+              >
+                {isDarkMode ? (
+                  <PlaceholderIcon text="☀" bgColor="bg-yellow-500" textColor="text-white" className="w-4 h-4" />
+                ) : (
+                  <PlaceholderIcon text="🌙" bgColor="bg-slate-600" textColor="text-white" className="w-4 h-4" />
+                )}
+                <span className={`text-sm ${isDarkMode ? "text-yellow-400" : "text-slate-600"}`}>Theme</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 mb-4 sm:mb-6">
+              {/* Shareable Link Button */}
+              <button
+                onClick={generateShareableLink}
+                className={`bg-gradient-to-r ${isDarkMode ? "from-cyan-500/20 to-cyan-600/20 border-cyan-400/50" : "from-blue-500/20 to-blue-600/20 border-blue-400/50"} backdrop-blur-xl border rounded-xl p-3 transition-all duration-300 cursor-pointer flex items-center justify-center gap-2`}
+              >
+                <PlaceholderIcon text="🔗" bgColor="bg-cyan-500" textColor="text-white" className="w-4 h-4" />
+                <span className={`text-sm ${isDarkMode ? "text-cyan-400" : "text-blue-600"}`}>
+                  Generate Shareable Link
+                </span>
+              </button>
+
+              {/* Save/Load Menu */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleDownload("json")}
+                  className={`${theme.card} border rounded-xl p-3 transition-all duration-300 cursor-pointer flex flex-col items-center gap-1`}
+                >
+                  <PlaceholderIcon text="📥" bgColor="bg-cyan-500" textColor="text-white" className="w-4 h-4" />
+                  <span className={`text-xs ${theme.text} font-semibold`}>Download</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const confirmLoad = window.confirm("Load default dashboard settings?")
+                    if (confirmLoad) {
+                      loadAnalysis("dashboard-001")
+                    }
+                  }}
+                  className={`${theme.card} border rounded-xl p-3 transition-all duration-300 cursor-pointer flex flex-col items-center gap-1`}
+                >
+                  <PlaceholderIcon text="📂" bgColor="bg-blue-500" textColor="text-white" className="w-4 h-4" />
+                  <span className={`text-xs ${theme.text} font-semibold`}>Load</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const confirmReset = window.confirm("Reset dashboard to default settings?")
+                    if (confirmReset) {
+                      resetDashboard()
+                    }
+                  }}
+                  className={`${theme.card} border rounded-xl p-3 transition-all duration-300 cursor-pointer flex flex-col items-center gap-1`}
+                >
+                  <PlaceholderIcon text="🔄" bgColor="bg-orange-500" textColor="text-white" className="w-4 h-4" />
+                  <span className={`text-xs ${theme.text} font-semibold`}>Reset</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className={`text-sm font-bold ${theme.text}`}>Recent Activity</h4>
+              {filteredData.slice(-5).map((item, index) => (
+                <button
+                  key={index}
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className={`w-full ${isDarkMode ? "bg-slate-800/60 border-white/10 hover:border-white/20 text-white" : "bg-gray-50/60 border-gray-200/50 hover:border-gray-300/50"} backdrop-blur-xl border rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] text-left cursor-pointer`}
+                >
+                  <div className="flex justify-between items-center mb-2 sm:mb-4">
+                    <span className={`text-xs sm:text-sm ${theme.muted} font-semibold`}>{item.date}</span>
+                    <span className={`text-sm sm:text-lg font-bold ${theme.accent}`}>
+                      {selectedPlatform === "all"
+                        ? item.totalEngagement > 1000000
+                          ? `${(item.totalEngagement / 1000000).toFixed(1)}M`
+                          : `${(item.totalEngagement / 1000).toFixed(0)}K`
+                        : (item[
+                              selectedPlatform as keyof Pick<
+                                SocialData,
+                                "Instagram" | "Twitter" | "Facebook" | "TikTok" | "LinkedIn"
+                              >
+                            ] as number) > 1000
+                          ? `${((item[selectedPlatform as keyof Pick<SocialData, "Instagram" | "Twitter" | "Facebook" | "TikTok" | "LinkedIn">] as number) / 1000).toFixed(0)}K`
+                          : (item[
+                              selectedPlatform as keyof Pick<
+                                SocialData,
+                                "Instagram" | "Twitter" | "Facebook" | "TikTok" | "LinkedIn"
+                              >
+                            ] as number)}
+                    </span>
+                  </div>
+
+                  {selectedPlatform === "all" ? (
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                      <div className="flex justify-between">
+                        <span className={`${theme.muted} font-medium flex items-center gap-1.5`}>
+                          <PlaceholderIcon className="w-3 h-3" /> IG:
+                        </span>
+                        <span className="font-bold" style={{ color: platformColors.Instagram }}>
+                          {(item.Instagram / 1000).toFixed(0)}K
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`${theme.muted} font-medium flex items-center gap-1.5`}>
+                          <PlaceholderIcon className="w-3 h-3" /> TW:
+                        </span>
+                        <span className="font-bold" style={{ color: platformColors.Twitter }}>
+                          {(item.Twitter / 1000).toFixed(0)}K
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`${theme.muted} font-medium flex items-center gap-1.5`}>
+                          <PlaceholderIcon className="w-3 h-3" /> FB:
+                        </span>
+                        <span className="font-bold" style={{ color: platformColors.Facebook }}>
+                          {(item.Facebook / 1000).toFixed(0)}K
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`${theme.muted} font-medium flex items-center gap-1.5`}>
+                          <PlaceholderIcon className="w-3 h-3" /> TT:
+                        </span>
+                        <span className="font-bold" style={{ color: platformColors.TikTok }}>
+                          {(item.TikTok / 1000).toFixed(0)}K
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
+                        <div
+                          className="w-3 h-3 sm:w-4 sm:h-4 rounded-full"
+                          style={{ backgroundColor: platformColors[selectedPlatform] }}
+                        />
+                        <span
+                          className="text-sm sm:text-lg font-bold"
+                          style={{ color: platformColors[selectedPlatform] }}
+                        >
+                          {selectedPlatform}
+                        </span>
+                      </div>
+                      <div className={`${theme.muted} text-xs sm:text-sm`}>
+                        Reach: {(item.reach / 1000).toFixed(0)}K | Impressions: {(item.impressions / 1000).toFixed(0)}K
+                      </div>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        .font-inter {
+          font-family: 'Inter', sans-serif;
+        }
+        
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+        }
+
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .group:hover > div[style*="z-index"] {
+          z-index: 2147483647 !important;
+          position: absolute !important;
+        }
+
+        header {
+          z-index: 9999 !important;
+          position: sticky !important;
+          top: 0 !important;
+        }
+
+        .relative .group:hover div {
+          z-index: 2147483647 !important;
+        }
+
+        .cursor-pointer {
+          cursor: pointer !important;
+        }
+
+        .cursor-pointer:hover {
+          cursor: pointer !important;
+        }
+
+        button {
+          cursor: pointer !important;
+        }
+
+        select {
+          cursor: pointer !important;
+        }
+
+        [onclick] {
+          cursor: pointer !important;
+        }
+
+        [role="button"] {
+          cursor: pointer !important;
+        }
+
+        @media (max-width: 475px) {
+          .xs\:block {
+            display: block;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+export default dynamic(() => Promise.resolve(SocialMediaDashboard), {
+  ssr: false,
+})
+
