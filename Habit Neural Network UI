@@ -1,0 +1,3570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Neural Network</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+        
+        * {
+            font-family: 'Ubuntu', sans-serif;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #1e3a8a;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+        
+        /* Modal backdrop animation */
+        .modal-backdrop {
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .modal-content {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Enhanced chain reaction effects */
+        .chain-pulse {
+            animation: chainPulse 0.8s ease-out;
+        }
+        
+        /* Momentum bar enhanced effects */
+        #momentum-bar-1:hover, #momentum-bar-2:hover, #momentum-bar-3:hover, #momentum-bar-4:hover, #momentum-bar-5:hover {
+            transform: scaleY(1.2) scaleX(1.1) !important;
+            transition: all 0.2s ease-out !important;
+        }
+        
+        .momentum-active {
+            background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: momentumPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes momentumPulse {
+            0%, 100% { 
+                box-shadow: var(--momentum-color);
+            }
+            50% { 
+                box-shadow: var(--momentum-color), 0 0 25px var(--momentum-glow);
+                transform: scaleY(1.05);
+            }
+        }
+        
+        /* Uniform connection arrow styling */
+        .connection-arrow {
+            stroke: #2563eb;
+            stroke-width: 2px;
+            stroke-opacity: 0.6;
+            transition: all 0.2s ease;
+        }
+        
+        .connection-arrow:hover {
+            stroke-width: 3px;
+            stroke-opacity: 0.9;
+        }
+        
+        /* Node pulse animation */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse-animation {
+            animation: pulse 0.6s ease-in-out;
+        }
+        
+        /* Glow effect */
+        .glow {
+            box-shadow: 0 0 30px rgba(37, 99, 235, 0.8);
+            filter: brightness(1.2);
+        }
+        
+        /* Glass morphism effect */
+        .glass {
+            background: rgba(10, 14, 39, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Enhanced momentum bar effects */
+        .momentum-bar {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 2px;
+        }
+        
+        .momentum-bar:hover {
+            transform: scaleY(1.2) scaleX(1.1) !important;
+            transition: all 0.2s ease-out !important;
+        }
+        
+        .momentum-active {
+            position: relative;
+            background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
+            animation: momentumPulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes momentumPulse {
+            0%, 100% { 
+                filter: brightness(1);
+            }
+            50% { 
+                filter: brightness(1.3);
+                transform: scaleY(1.05);
+            }
+        }
+        
+        /* Shake animation for validation errors */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        /* Enhanced animations for notifications */
+        @keyframes slideInFromRight {
+            from { 
+                opacity: 0;
+                transform: translateX(100%) scale(0.9);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        @keyframes slideOutToRight {
+            from { 
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+            to { 
+                opacity: 0;
+                transform: translateX(100%) scale(0.9);
+            }
+        }
+        
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: translateX(100%) scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: translateX(-10px) scale(1.05);
+            }
+            70% {
+                transform: translateX(5px) scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        @keyframes notificationPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+        
+        /* Notification container styles */
+        .notification-container {
+            position: fixed;
+            top: 6rem;
+            right: 1rem;
+            z-index: 1000;
+            pointer-events: none;
+            max-width: 400px;
+        }
+        
+        .notification {
+            pointer-events: auto;
+            margin-bottom: 0.75rem;
+            backdrop-filter: blur(16px);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 
+                        0 10px 10px -5px rgba(0, 0, 0, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .notification::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            opacity: 0.6;
+        }
+        
+        /* Auto-dismiss progress bar */
+        .notification-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: currentColor;
+            opacity: 0.4;
+            transform-origin: left;
+            animation: notificationProgress linear;
+        }
+        
+        .notification-content {
+            padding: 1rem 1.25rem;
+            position: relative;
+        }
+        
+        .notification-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            padding: 0.25rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            animation: notificationPulse 2s ease-in-out infinite;
+        }
+        
+
+        
+        /* Notification type styles */
+        .notification-increment {
+            background: linear-gradient(135deg, 
+                rgba(16, 185, 129, 0.15) 0%, 
+                rgba(5, 150, 105, 0.10) 100%);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        
+        .notification-decrement {
+            background: linear-gradient(135deg, 
+                rgba(251, 146, 60, 0.15) 0%, 
+                rgba(249, 115, 22, 0.10) 100%);
+            color: #f59e0b;
+            border-color: rgba(251, 146, 60, 0.3);
+        }
+        
+        .notification-warning {
+            background: linear-gradient(135deg, 
+                rgba(245, 158, 11, 0.15) 0%, 
+                rgba(217, 119, 6, 0.10) 100%);
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        
+        .notification-error {
+            background: linear-gradient(135deg, 
+                rgba(239, 68, 68, 0.15) 0%, 
+                rgba(220, 38, 38, 0.10) 100%);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Animations for success notifications */
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeOut {
+            from { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to { 
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+        
+        @keyframes notificationProgress {
+            from {
+                transform: scaleX(1);
+            }
+            to {
+                transform: scaleX(0);
+            }
+        }
+        
+        /* Custom Dropdown Styles */
+        .custom-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .custom-dropdown-trigger {
+            width: 100%;
+            padding: 8px 40px 8px 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+            font-family: 'Ubuntu', sans-serif;
+            font-size: 14px;
+        }
+        
+        .custom-dropdown-trigger:hover {
+            border-color: #3b82f6;
+            background: #334155;
+        }
+        
+        .custom-dropdown-trigger:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .custom-dropdown-arrow {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s ease;
+            color: #94a3b8;
+        }
+        
+        .custom-dropdown.open .custom-dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .custom-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: all 0.2s ease;
+            max-height: 160px;
+            overflow-y: auto;
+            margin-top: 4px;
+        }
+        
+        /* Adjust dropdown when near bottom of viewport */
+        .custom-dropdown.dropup .custom-dropdown-menu {
+            top: auto;
+            bottom: 100%;
+            margin-top: 0;
+            margin-bottom: 4px;
+            transform: translateY(10px);
+        }
+        
+        .custom-dropdown.dropup.open .custom-dropdown-menu {
+            transform: translateY(0);
+        }
+        
+        .custom-dropdown.open .custom-dropdown-menu {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+        
+        .custom-dropdown-option {
+            padding: 8px 12px;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            font-family: 'Ubuntu', sans-serif;
+            font-size: 14px;
+        }
+        
+        .custom-dropdown-option:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+        
+        .custom-dropdown-option.selected {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            font-weight: 500;
+        }
+        
+        .custom-dropdown-option:first-child {
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+        }
+        
+        .custom-dropdown-option:last-child {
+            border-bottom-left-radius: 7px;
+            border-bottom-right-radius: 7px;
+        }
+        
+        /* Category badge styles for dropdown options */
+        .dropdown-category-badge {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        /* Compact dropdown for modals */
+        .modal-content .custom-dropdown-menu {
+            max-height: 140px;
+            border-radius: 6px;
+        }
+        
+        .modal-content .custom-dropdown-option {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        
+        .dropdown-category-badge.health { background: #10b981; }
+        .dropdown-category-badge.productivity { background: #3b82f6; }
+        .dropdown-category-badge.learning { background: #8b5cf6; }
+        .dropdown-category-badge.mindfulness { background: #ec4899; }
+        .dropdown-category-badge.social { background: #f59e0b; }
+        
+        /* Custom Number Input Spinner Styling */
+        /* Hide default spinners */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        /* Custom spinner container */
+        .custom-number-input {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .custom-number-input input {
+            padding-right: 2.5rem !important;
+        }
+        
+        .custom-spinner {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 2rem;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #334155;
+            border-radius: 0 8px 8px 0;
+            overflow: hidden;
+        }
+        
+        .spinner-button {
+            flex: 1;
+            background: #1e293b;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            font-size: 12px;
+            user-select: none;
+        }
+        
+        .spinner-button:hover {
+            background: #334155;
+            color: #3b82f6;
+        }
+        
+        .spinner-button:active {
+            background: #3b82f6;
+            color: white;
+            transform: scale(0.95);
+        }
+        
+        .spinner-button:first-child {
+            border-bottom: 1px solid #334155;
+        }
+        
+        .spinner-button svg {
+            width: 12px;
+            height: 12px;
+        }
+        
+        /* Mobile Collapsible Sidebar Styles */
+        .mobile-sidebar-toggle {
+            display: none;
+        }
+        
+        .mobile-sidebar-header {
+            display: none;
+        }
+        
+        .mobile-sidebar-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .mobile-sidebar-content.expanded {
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        .mobile-sidebar-arrow {
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-sidebar-toggle.expanded .mobile-sidebar-arrow {
+            transform: rotate(180deg);
+        }
+        
+        /* Mobile menu arrow animation */
+        .mobile-menu-arrow {
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-menu-toggle.expanded .mobile-menu-arrow {
+            transform: rotate(180deg);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            /* Enable body scrolling on mobile */
+            body {
+                overflow-y: auto !important;
+                height: auto !important;
+            }
+            
+            /* Show mobile elements */
+            .mobile-sidebar-toggle {
+                display: flex !important;
+            }
+            
+            .mobile-sidebar-header {
+                display: flex !important;
+            }
+            
+            /* Hide desktop sidebar header */
+            .desktop-sidebar-header {
+                display: none !important;
+            }
+            
+            /* Mobile layout adjustments */
+            .main-container {
+                flex-direction: column !important;
+                height: auto !important;
+                min-height: 100vh !important;
+            }
+            
+            .sidebar-mobile {
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                border-right: none !important;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+                position: relative;
+                flex-shrink: 0;
+            }
+            
+            .network-area-mobile {
+                width: 100% !important;
+                height: 60vh !important;
+                min-height: 400px;
+                max-height: 70vh;
+                flex-shrink: 0;
+                overflow: hidden;
+                position: relative;
+            }
+            
+            /* Header adjustments for mobile */
+            .header-mobile {
+                padding: 0.75rem 1rem !important;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .header-title-mobile {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+            
+            .header-title-mobile h1 {
+                font-size: 1.5rem !important;
+                margin: 0;
+            }
+            
+            .mobile-menu-toggle {
+                display: flex !important;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.5rem;
+                background: rgba(30, 41, 59, 0.8);
+                border: 1px solid rgba(148, 163, 184, 0.3);
+                border-radius: 8px;
+                color: #e2e8f0;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .mobile-menu-toggle:hover {
+                background: rgba(51, 65, 85, 0.9);
+                border-color: #3b82f6;
+            }
+            
+            .mobile-menu-content {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .mobile-menu-content.expanded {
+                display: flex !important;
+            }
+            
+            .mobile-nav-buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            
+            .mobile-nav-buttons button {
+                padding: 0.5rem 0.75rem !important;
+                font-size: 0.875rem !important;
+                min-width: auto;
+                flex: 1;
+                max-width: 120px;
+            }
+            
+            .mobile-nav-buttons button span {
+                display: none;
+            }
+            
+            .mobile-network-stats {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            
+            .mobile-network-stats .glass {
+                padding: 0.5rem 0.75rem !important;
+                min-width: auto;
+                flex: 1;
+                max-width: 150px;
+                text-align: center;
+            }
+            
+            .mobile-network-stats .glass .text-xs {
+                font-size: 0.625rem !important;
+            }
+            
+            /* Hide desktop stats on mobile */
+            .desktop-stats {
+                display: none !important;
+            }
+            
+            /* Mobile habit cards */
+            .habit-card-mobile {
+                padding: 0.75rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            .habit-card-mobile h3 {
+                font-size: 0.875rem !important;
+            }
+            
+            .habit-card-mobile .habit-stats {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                align-items: center;
+            }
+            
+            .habit-card-mobile .habit-actions {
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .habit-card-mobile .habit-actions button {
+                padding: 0.25rem !important;
+                min-width: 2rem;
+                min-height: 2rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Mobile sidebar habits list */
+            .mobile-sidebar-content .habits-list-container {
+                padding: 1rem;
+                max-height: calc(50vh - 2rem);
+                overflow-y: auto;
+            }
+            
+            /* Ensure mobile sidebar takes proper space */
+            .mobile-sidebar-content.expanded .habits-list-container {
+                max-height: calc(45vh - 2rem);
+                overflow-y: auto;
+            }
+            
+            /* Modal adjustments */
+            .modal-content {
+                padding: 1rem !important;
+                margin: 1rem !important;
+            }
+            
+            .modal-content .glass {
+                padding: 1.5rem !important;
+                max-width: calc(100vw - 2rem) !important;
+                max-height: calc(100vh - 2rem) !important;
+                overflow-y: auto;
+            }
+            
+            /* Ensure dropdowns work properly in modals */
+            .custom-dropdown-menu {
+                max-height: 120px !important;
+            }
+            
+            /* Notification adjustments */
+            .notification-container {
+                top: 1rem !important;
+                right: 1rem !important;
+                left: 1rem !important;
+                max-width: none !important;
+            }
+            
+            .notification {
+                margin-bottom: 0.5rem !important;
+            }
+            
+            /* SVG network area constraints */
+            #network-svg {
+                width: 100% !important;
+                height: 100% !important;
+                max-width: 100vw;
+                max-height: 60vh;
+                display: block;
+            }
+            
+            /* Ensure graph area is contained */
+            .network-area-mobile {
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                border-radius: 8px;
+                margin: 1rem;
+                background: rgba(15, 23, 42, 0.5);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Extra small mobile devices */
+            .header-mobile {
+                padding: 0.5rem !important;
+            }
+            
+            .header-title-mobile h1 {
+                font-size: 1.25rem !important;
+            }
+            
+            .mobile-menu-toggle {
+                padding: 0.375rem !important;
+                font-size: 0.75rem;
+            }
+            
+            .mobile-nav-buttons button {
+                padding: 0.375rem 0.5rem !important;
+                font-size: 0.75rem !important;
+                max-width: 100px;
+            }
+            
+            .mobile-network-stats .glass {
+                padding: 0.375rem 0.5rem !important;
+                font-size: 0.75rem;
+                max-width: 120px;
+            }
+            
+            .modal-content .glass {
+                padding: 1rem !important;
+            }
+            
+            /* Smaller touch targets for very small screens */
+            .habit-card-mobile .habit-actions button {
+                width: 1.75rem;
+                height: 1.75rem;
+                padding: 0.125rem !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .mobile-sidebar-content.expanded {
+                max-height: 40vh;
+            }
+            
+            .mobile-sidebar-content.expanded .habits-list-container {
+                max-height: calc(35vh - 2rem);
+            }
+            
+            .network-area-mobile {
+                height: 50vh !important;
+                min-height: 300px !important;
+            }
+            
+            #network-svg {
+                max-height: 50vh !important;
+            }
+        }
+        
+        /* Desktop-only elements */
+        @media (min-width: 769px) {
+            .mobile-sidebar-toggle,
+            .mobile-sidebar-header,
+            .mobile-menu-toggle,
+            .mobile-menu-content,
+            .mobile-nav-buttons,
+            .mobile-network-stats {
+                display: none !important;
+            }
+            
+            .desktop-sidebar-header {
+                display: block !important;
+            }
+            
+            .desktop-stats {
+                display: flex !important;
+            }
+        }
+        
+        /* Loading Screen Styles */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0e27;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+        
+        .loading-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-container {
+            text-align: center;
+            position: relative;
+        }
+        
+        .loading-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+            background-size: 300% 300%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+        
+        .loading-subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+            opacity: 0.8;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+        
+        /* Neural Network Loading Animation */
+        .loading-network {
+            width: 300px;
+            height: 200px;
+            position: relative;
+            margin: 0 auto 2rem;
+        }
+        
+        .loading-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+            animation: nodePulse 2s ease-in-out infinite;
+        }
+        
+        .loading-node:nth-child(1) { top: 20px; left: 50px; animation-delay: 0s; }
+        .loading-node:nth-child(2) { top: 60px; left: 20px; animation-delay: 0.2s; }
+        .loading-node:nth-child(3) { top: 100px; left: 80px; animation-delay: 0.4s; }
+        .loading-node:nth-child(4) { top: 140px; left: 40px; animation-delay: 0.6s; }
+        .loading-node:nth-child(5) { top: 30px; left: 150px; animation-delay: 0.8s; }
+        .loading-node:nth-child(6) { top: 80px; left: 200px; animation-delay: 1s; }
+        .loading-node:nth-child(7) { top: 130px; left: 170px; animation-delay: 1.2s; }
+        .loading-node:nth-child(8) { top: 50px; left: 250px; animation-delay: 1.4s; }
+        
+        .loading-connection {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(59, 130, 246, 0.6), 
+                rgba(139, 92, 246, 0.6), 
+                transparent
+            );
+            transform-origin: left center;
+            animation: connectionFlow 3s ease-in-out infinite;
+        }
+        
+        .loading-connection:nth-child(9) {
+            top: 26px;
+            left: 62px;
+            width: 88px;
+            transform: rotate(15deg);
+            animation-delay: 0.5s;
+        }
+        
+        .loading-connection:nth-child(10) {
+            top: 66px;
+            left: 32px;
+            width: 48px;
+            transform: rotate(45deg);
+            animation-delay: 0.7s;
+        }
+        
+        .loading-connection:nth-child(11) {
+            top: 106px;
+            left: 92px;
+            width: 108px;
+            transform: rotate(-25deg);
+            animation-delay: 0.9s;
+        }
+        
+        .loading-connection:nth-child(12) {
+            top: 146px;
+            left: 52px;
+            width: 118px;
+            transform: rotate(10deg);
+            animation-delay: 1.1s;
+        }
+        
+        .loading-connection:nth-child(13) {
+            top: 86px;
+            left: 212px;
+            width: 38px;
+            transform: rotate(60deg);
+            animation-delay: 1.3s;
+        }
+        
+        @keyframes nodePulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+            }
+            50% {
+                transform: scale(1.3);
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.9);
+            }
+        }
+        
+        @keyframes connectionFlow {
+            0% {
+                opacity: 0;
+                background-position: -100% center;
+            }
+            50% {
+                opacity: 1;
+                background-position: 0% center;
+            }
+            100% {
+                opacity: 0;
+                background-position: 100% center;
+            }
+        }
+        
+        /* Loading Progress Bar */
+        .loading-progress {
+            width: 300px;
+            height: 4px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 2px;
+            margin: 2rem auto;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, 
+                #3b82f6, 
+                #8b5cf6, 
+                #ec4899, 
+                #3b82f6
+            );
+            background-size: 200% 100%;
+            border-radius: 2px;
+            width: 0%;
+            animation: progressFill 2s ease-out forwards, 
+                       progressGlow 2s linear infinite;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        @keyframes progressFill {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        
+        @keyframes progressGlow {
+            0%, 100% {
+                background-position: 0% center;
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+            }
+            50% {
+                background-position: 100% center;
+                box-shadow: 0 0 25px rgba(139, 92, 246, 0.6);
+            }
+        }
+        
+        /* Loading Text Animation */
+        .loading-text {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-top: 1rem;
+            opacity: 0.7;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+            animation: loadingDots 1.5s infinite;
+        }
+        
+        @keyframes loadingDots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        .loading-dots::after {
+            content: '';
+            animation: loadingDots 1.5s infinite;
+        }
+        
+        /* Glass morphism effect for loading */
+        .loading-glass {
+            background: rgba(10, 14, 39, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Floating particles */
+        .loading-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .loading-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(59, 130, 246, 0.4);
+            border-radius: 50%;
+            animation: floatParticle 8s linear infinite;
+        }
+        
+        .loading-particle:nth-child(odd) {
+            background: rgba(139, 92, 246, 0.4);
+            animation-duration: 10s;
+        }
+        
+        .loading-particle:nth-child(3n) {
+            background: rgba(236, 72, 153, 0.4);
+            animation-duration: 12s;
+        }
+        
+        @keyframes floatParticle {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Mobile loading adjustments */
+        @media (max-width: 768px) {
+            .loading-title {
+                font-size: 2rem;
+            }
+            
+            .loading-subtitle {
+                font-size: 1rem;
+            }
+            
+            .loading-network {
+                width: 250px;
+                height: 150px;
+            }
+            
+            .loading-progress {
+                width: 250px;
+            }
+            
+            .loading-glass {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 overflow-hidden" style="background: #0a0e27;">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-particles">
+            <!-- Particles will be generated by JavaScript -->
+        </div>
+        
+        <div class="loading-container loading-glass">
+            <h1 class="loading-title">Habit Neural Network</h1>
+            <p class="loading-subtitle">Connecting your habits into a powerful network</p>
+            
+            <!-- Animated Neural Network -->
+            <div class="loading-network">
+                <!-- Nodes -->
+                <div class="loading-node"></div>
+                <div class="loading-node"></div>
+                <div class="loading-node"></div>
+                <div class="loading-node"></div>
+                <div class="loading-node"></div>
+                <div class="loading-node"></div>
+                <div class="loading-node"></div>
+                <div class="loading-node"></div>
+                
+                <!-- Connections -->
+                <div class="loading-connection"></div>
+                <div class="loading-connection"></div>
+                <div class="loading-connection"></div>
+                <div class="loading-connection"></div>
+                <div class="loading-connection"></div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="loading-progress">
+                <div class="loading-progress-bar"></div>
+            </div>
+            
+            <div class="loading-text">
+                Building your neural network<span class="loading-dots"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebGL Background -->
+    <canvas id="webgl-canvas" class="fixed inset-0 w-full h-full" style="background: transparent;"></canvas>
+    
+    <!-- Main Container -->
+    <div class="relative z-10 h-screen md:h-screen flex flex-col main-container">
+        <!-- Header -->
+        <header class="glass border-b border-slate-800/50 px-8 py-4 header-mobile">
+            <!-- Desktop Layout -->
+            <div class="hidden md:flex items-center justify-between">
+                <div class="flex items-center space-x-8">
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                        Habit Neural Network
+                    </h1>
+                    <nav class="flex space-x-4 nav-buttons">
+                        <button onclick="openModal('habit')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            <span>Add Habit</span>
+                        </button>
+                        <button onclick="openModal('connection')" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors duration-200 flex items-center space-x-2 border border-slate-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                            </svg>
+                            <span>Add Connection</span>
+                        </button>
+                        <button onclick="clearAllData()" class="px-3 py-2 bg-red-900 hover:bg-red-800 rounded-lg transition-colors duration-200 flex items-center space-x-2 border border-red-700" title="Reset to Example Data">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span>Reset</span>
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- Desktop Stats -->
+                <div class="flex items-center space-x-4 desktop-stats">
+                    <div class="glass px-6 py-3 rounded-lg">
+                        <div class="text-xs text-slate-400 mb-2">momentum</div>
+                        <div class="flex items-center space-x-3">
+                            <div class="flex space-x-1">
+                                <div id="momentum-bar-1" class="w-3 h-6 bg-slate-700 rounded-sm transition-all duration-500 transform hover:scale-110"></div>
+                                <div id="momentum-bar-2" class="w-3 h-6 bg-slate-700 rounded-sm transition-all duration-500 transform hover:scale-110"></div>
+                                <div id="momentum-bar-3" class="w-3 h-6 bg-slate-700 rounded-sm transition-all duration-500 transform hover:scale-110"></div>
+                                <div id="momentum-bar-4" class="w-3 h-6 bg-slate-700 rounded-sm transition-all duration-500 transform hover:scale-110"></div>
+                                <div id="momentum-bar-5" class="w-3 h-6 bg-slate-700 rounded-sm transition-all duration-500 transform hover:scale-110"></div>
+                            </div>
+                            <div class="text-right">
+                                <div id="network-score" class="text-lg font-bold text-blue-400">0</div>
+                                <div class="text-xs text-slate-500">strength</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Daily Commitment Counter -->
+                    <div class="glass px-4 py-2 rounded-lg">
+                        <div class="text-xs text-slate-400 mb-1">Today's Progress</div>
+                        <div class="flex items-center space-x-2">
+                            <div class="text-center">
+                                <div id="daily-count" class="text-lg font-bold text-green-400">0</div>
+                                <div class="text-xs text-slate-500">completed</div>
+                            </div>
+                            <div class="text-slate-600">/</div>
+                            <div class="text-center">
+                                <div id="total-habits" class="text-lg font-bold text-slate-400">0</div>
+                                <div class="text-xs text-slate-500">habits</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Network Stats -->
+                    <div class="glass px-4 py-2 rounded-lg">
+                        <div class="text-xs text-slate-400">Habits: <span id="habit-count" class="text-blue-400 font-semibold">0</span></div>
+                        <div class="text-xs text-slate-400">Links: <span id="connection-count" class="text-purple-400 font-semibold">0</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile Layout -->
+            <div class="md:hidden">
+                <!-- Mobile Header Title and Menu Toggle -->
+                <div class="header-title-mobile">
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                        Habit Neural Network
+                    </h1>
+                    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <span class="text-sm">Menu</span>
+                        <svg class="w-3 h-3 mobile-menu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Mobile Menu Content -->
+                <div class="mobile-menu-content" id="mobile-menu-content">
+                    <!-- Mobile Navigation Buttons -->
+                    <div class="mobile-nav-buttons">
+                        <button onclick="openModal('habit')" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            <span>Add</span>
+                        </button>
+                        <button onclick="openModal('connection')" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-1 border border-slate-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                            </svg>
+                            <span>Link</span>
+                        </button>
+                        <button onclick="clearAllData()" class="px-3 py-2 bg-red-900 hover:bg-red-800 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-1 border border-red-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Mobile Stats -->
+                    <div class="mobile-network-stats">
+                        <!-- Momentum -->
+                        <div class="glass px-3 py-2 rounded-lg">
+                            <div class="text-xs text-slate-400 mb-1">Momentum</div>
+                            <div class="flex items-center justify-center space-x-1 mb-1">
+                                <div id="momentum-bar-1-mobile" class="w-2 h-4 bg-slate-700 rounded-sm transition-all duration-500"></div>
+                                <div id="momentum-bar-2-mobile" class="w-2 h-4 bg-slate-700 rounded-sm transition-all duration-500"></div>
+                                <div id="momentum-bar-3-mobile" class="w-2 h-4 bg-slate-700 rounded-sm transition-all duration-500"></div>
+                                <div id="momentum-bar-4-mobile" class="w-2 h-4 bg-slate-700 rounded-sm transition-all duration-500"></div>
+                                <div id="momentum-bar-5-mobile" class="w-2 h-4 bg-slate-700 rounded-sm transition-all duration-500"></div>
+                            </div>
+                            <div class="text-center">
+                                <div id="network-score-mobile" class="text-sm font-bold text-blue-400">0</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Daily Progress -->
+                        <div class="glass px-3 py-2 rounded-lg">
+                            <div class="text-xs text-slate-400 mb-1">Today</div>
+                            <div class="text-center">
+                                <div class="text-sm font-bold">
+                                    <span id="daily-count-mobile" class="text-green-400">0</span>
+                                    <span class="text-slate-600">/</span>
+                                    <span id="total-habits-mobile" class="text-slate-400">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Network Stats -->
+                        <div class="glass px-3 py-2 rounded-lg">
+                            <div class="text-xs text-slate-400 mb-1">Network</div>
+                            <div class="text-center text-xs">
+                                <div><span id="habit-count-mobile" class="text-blue-400 font-semibold">0</span> habits</div>
+                                <div><span id="connection-count-mobile" class="text-purple-400 font-semibold">0</span> links</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="flex-1 flex overflow-hidden main-container">
+            <!-- Left Sidebar -->
+            <aside class="w-72 glass border-r border-slate-800/50 flex flex-col sidebar-mobile">
+                <!-- Desktop Sidebar Header -->
+                <div class="desktop-sidebar-header p-6 border-b border-slate-800/50">
+                    <h2 class="text-lg font-semibold text-slate-200 mb-2">Your Habits</h2>
+                    <div class="text-sm text-slate-400">
+                        Track your progress and connections
+                    </div>
+                </div>
+                
+                <!-- Mobile Sidebar Header with Toggle -->
+                <div class="mobile-sidebar-header p-4 border-b border-slate-800/50">
+                    <button class="mobile-sidebar-toggle w-full flex items-center text-left" onclick="toggleMobileSidebar()">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-200">Your Habits</h2>
+                            <div class="text-sm text-slate-400">
+                                Track your progress and connections
+                            </div>
+                        </div>
+                    </button>
+                </div>
+                
+                <!-- Desktop Sidebar Content -->
+                <div class="desktop-sidebar-content flex-1 overflow-y-auto p-4 habits-list-container">
+                    <div id="habits-list" class="space-y-3">
+                        <!-- Habits will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Mobile Collapsible Sidebar Content -->
+                <div class="mobile-sidebar-content" id="mobile-sidebar-content">
+                    <div class="habits-list-container">
+                        <div id="habits-list-mobile" class="space-y-3">
+                            <!-- Mobile habits will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Desktop Sidebar Footer -->
+                <div class="desktop-sidebar-footer p-4 border-t border-slate-800/50">
+                    <div class="text-xs text-slate-500 text-center">
+                        Click nodes to edit • Double-click to connect
+                    </div>
+                </div>
+                
+                <!-- Mobile Sidebar Footer (shown when expanded) -->
+                <div class="mobile-sidebar-footer p-2 border-t border-slate-800/50 text-center" style="display: none;">
+                    <div class="text-xs text-slate-500">
+                        Tap nodes to edit • Double-tap to connect
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Right Graph Area -->
+            <div class="flex-1 relative overflow-hidden network-area-mobile">
+            <svg id="network-svg" class="absolute inset-0 w-full h-full"></svg>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modals -->
+    <!-- Add Habit Modal -->
+    <div id="habit-modal" class="hidden fixed inset-0 z-50">
+        <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-70" onclick="closeModal('habit')"></div>
+        <div class="modal-content relative flex items-center justify-center min-h-screen p-4">
+            <div class="glass rounded-xl p-8 max-w-md w-full">
+                <h2 class="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">Add New Habit</h2>
+                <form onsubmit="addHabit(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Habit Name</label>
+                            <input type="text" id="habit-name" class="w-full px-4 py-2 bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all border border-slate-700">
+                            <div id="habit-name-error" class="hidden mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm text-red-400" id="habit-name-error-text"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Initial Streak (days)</label>
+                            <div class="custom-number-input">
+                                <input type="number" id="habit-streak" value="0" min="0" max="100000" class="w-full px-4 py-2 bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all border border-slate-700">
+                                <div class="custom-spinner">
+                                    <button type="button" class="spinner-button" onclick="incrementSpinner('habit-streak')" tabindex="-1">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="spinner-button" onclick="decrementSpinner('habit-streak')" tabindex="-1">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="habit-streak-error" class="hidden mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm text-red-400" id="habit-streak-error-text"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Category</label>
+                            <div class="custom-dropdown" id="habit-category-dropdown">
+                                <div class="custom-dropdown-trigger" tabindex="0">
+                                    <span class="dropdown-selected-text">
+                                        <span class="dropdown-category-badge health"></span>
+                                        Health
+                                    </span>
+                                    <svg class="custom-dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-dropdown-option selected" data-value="health">
+                                        <span class="dropdown-category-badge health"></span>
+                                        Health
+                                    </div>
+                                    <div class="custom-dropdown-option" data-value="productivity">
+                                        <span class="dropdown-category-badge productivity"></span>
+                                        Productivity
+                                    </div>
+                                    <div class="custom-dropdown-option" data-value="learning">
+                                        <span class="dropdown-category-badge learning"></span>
+                                        Learning
+                                    </div>
+                                    <div class="custom-dropdown-option" data-value="mindfulness">
+                                        <span class="dropdown-category-badge mindfulness"></span>
+                                        Mindfulness
+                                    </div>
+                                    <div class="custom-dropdown-option" data-value="social">
+                                        <span class="dropdown-category-badge social"></span>
+                                        Social
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="habit-category" value="health">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeModal('habit')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Add Habit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connection Modal -->
+    <div id="connection-modal" class="hidden fixed inset-0 z-50">
+        <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-70" onclick="closeModal('connection')"></div>
+        <div class="modal-content relative flex items-center justify-center min-h-screen p-4">
+            <div class="glass rounded-xl p-8 max-w-md w-full">
+                <h2 class="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">Connect Habits</h2>
+                <p class="text-slate-400 mb-4">Double-click on a habit node to enter connection mode, then click on another habit to create a connection.</p>
+                <button onclick="closeModal('connection')" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Habit Modal -->
+    <div id="edit-modal" class="hidden fixed inset-0 z-50">
+        <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-70" onclick="closeModal('edit')"></div>
+        <div class="modal-content relative flex items-center justify-center min-h-screen p-4">
+            <div class="glass rounded-xl p-8 max-w-md w-full">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">Edit Habit</h2>
+                </div>
+                <form onsubmit="updateHabit(event)">
+                    <input type="hidden" id="edit-habit-id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Habit Name</label>
+                            <input type="text" id="edit-habit-name" class="w-full px-4 py-2 bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all border border-slate-700">
+                            <div id="edit-habit-name-error" class="hidden mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm text-red-400" id="edit-habit-name-error-text"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Current Streak (days)</label>
+                            <div class="custom-number-input">
+                                <input type="number" id="edit-habit-streak" min="0" max="100000" class="w-full px-4 py-2 bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all border border-slate-700">
+                                <div class="custom-spinner">
+                                    <button type="button" class="spinner-button" onclick="incrementSpinner('edit-habit-streak')" tabindex="-1">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="spinner-button" onclick="decrementSpinner('edit-habit-streak')" tabindex="-1">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="edit-habit-streak-error" class="hidden mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm text-red-400" id="edit-habit-streak-error-text"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button type="button" onclick="deleteHabit()" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Delete</button>
+                        <div class="flex space-x-3">
+                            <button type="button" onclick="closeModal('edit')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">Update</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reset Confirmation Modal -->
+    <div id="reset-confirm-modal" class="hidden fixed inset-0 z-50">
+        <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-70" onclick="closeModal('reset-confirm')"></div>
+        <div class="modal-content relative flex items-center justify-center min-h-screen p-4">
+            <div class="glass rounded-xl p-8 max-w-md w-full">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-red-600/20 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-200">Reset All Data</h2>
+                        <p class="text-sm text-slate-400 mt-1">This action cannot be undone</p>
+                    </div>
+                </div>
+                
+                <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
+                    <div class="flex items-start space-x-3">
+                        <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="text-sm text-red-300">
+                            <p class="font-medium mb-1">Are you sure you want to reset all data?</p>
+                            <p class="text-red-400/80">This will:</p>
+                            <ul class="list-disc list-inside mt-2 text-red-400/80 space-y-1">
+                                <li>Delete all your habits and progress</li>
+                                <li>Remove all connections between habits</li>
+                                <li>Restore example habits and data</li>
+                                <li>Reset your momentum to default</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('reset-confirm')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-300">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="confirmReset()" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>Reset All Data</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global state
+        const appState = {
+            habits: [],
+            connections: [],
+            selectedNode: null,
+            connectionMode: false,
+            dailyCompletions: new Set() // Track which habits were completed today
+        };
+        
+        let clickTimeout = null;
+
+        function resetTimeout() {
+            if (clickTimeout) {
+                clearTimeout(clickTimeout);
+                clickTimeout = null;
+            }
+        }
+        
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('habitTracker_habits', JSON.stringify(appState.habits));
+            localStorage.setItem('habitTracker_connections', JSON.stringify(appState.connections));
+            localStorage.setItem('habitTracker_dailyCompletions', JSON.stringify([...appState.dailyCompletions]));
+            localStorage.setItem('habitTracker_lastDate', new Date().toDateString());
+        }
+        
+        // Clear all data and reset to examples
+        function clearAllData() {
+            openModal('reset-confirm');
+        }
+        
+        // Calculate and update momentum
+        function updateNetworkMomentum() {
+            const habitCount = appState.habits.length;
+            const connectionCount = appState.connections.length;
+            
+            // Calculate average habit strength (streak-based)
+            const totalStreak = appState.habits.reduce((sum, habit) => sum + habit.streak, 0);
+            const avgStreak = habitCount > 0 ? totalStreak / habitCount : 0;
+            
+            // Calculate network connectivity (connections per habit)
+            const connectivity = habitCount > 0 ? connectionCount / habitCount : 0;
+            
+            // Momentum formula: combines average streak strength and connectivity
+            const rawScore = (avgStreak * 0.7) + (connectivity * 30); // Weighted formula
+            const networkScore = Math.min(Math.round(rawScore), 999); // Cap at 999
+            
+            // Determine momentum level (1-5 bars)
+            let momentumLevel = 0;
+            if (networkScore >= 10) momentumLevel = 1;      // Basic network
+            if (networkScore >= 25) momentumLevel = 2;      // Developing network  
+            if (networkScore >= 50) momentumLevel = 3;      // Strong network
+            if (networkScore >= 100) momentumLevel = 4;     // Powerful network
+            if (networkScore >= 200) momentumLevel = 5;     // Legendary network
+            
+            // Update UI
+            document.getElementById('network-score').textContent = networkScore;
+            document.getElementById('habit-count').textContent = habitCount;
+            document.getElementById('connection-count').textContent = connectionCount;
+            
+            // Update mobile stats
+            updateMobileStats();
+            
+            // Update daily completion counter
+            updateDailyCounter();
+            
+            // Update momentum bars with enhanced visual effects
+            const colors = [
+                '#ef4444', // Red - Starting
+                '#f97316', // Orange - Building  
+                '#eab308', // Yellow - Growing
+                '#22c55e', // Green - Strong
+                '#3b82f6'  // Blue - Legendary
+            ];
+            
+            for (let i = 1; i <= 5; i++) {
+                const bar = document.getElementById(`momentum-bar-${i}`);
+                if (i <= momentumLevel) {
+                    // Active bar - gets its own color with glow effect
+                    bar.style.backgroundColor = colors[i - 1];
+                    bar.style.boxShadow = `0 0 15px ${colors[i - 1]}, inset 0 0 5px rgba(255,255,255,0.3)`;
+                    bar.style.transform = 'scaleY(1)';
+                    bar.classList.add('momentum-active');
+                    bar.classList.add('momentum-bar');
+                } else {
+                    // Inactive bar
+                    bar.style.backgroundColor = '#374151';
+                    bar.style.boxShadow = 'none';
+                    bar.style.transform = 'scaleY(0.6)';
+                    bar.classList.remove('momentum-active');
+                    bar.classList.add('momentum-bar');
+                }
+            }
+        }
+        
+        // Update daily completion counter
+        function updateDailyCounter() {
+            const completedToday = appState.dailyCompletions.size;
+            const totalHabits = appState.habits.length;
+            
+            document.getElementById('daily-count').textContent = completedToday;
+            document.getElementById('total-habits').textContent = totalHabits;
+            
+            // Update color based on completion percentage
+            const dailyCountElement = document.getElementById('daily-count');
+            if (totalHabits === 0) {
+                dailyCountElement.className = 'text-lg font-bold text-slate-400';
+            } else {
+                const percentage = (completedToday / totalHabits) * 100;
+                if (percentage === 100) {
+                    dailyCountElement.className = 'text-lg font-bold text-green-400'; // Full completion - bright green
+                } else if (percentage >= 75) {
+                    dailyCountElement.className = 'text-lg font-bold text-emerald-400'; // Great progress - emerald
+                } else if (percentage >= 50) {
+                    dailyCountElement.className = 'text-lg font-bold text-yellow-400'; // Good progress - yellow
+                } else if (percentage >= 25) {
+                    dailyCountElement.className = 'text-lg font-bold text-orange-400'; // Some progress - orange
+                } else if (percentage > 0) {
+                    dailyCountElement.className = 'text-lg font-bold text-red-400'; // Started - red
+                } else {
+                    dailyCountElement.className = 'text-lg font-bold text-slate-400'; // Not started - gray
+                }
+            }
+        }
+        
+        // Check if it's a new day and reset daily completions
+        function checkAndResetDailyCompletions() {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('habitTracker_lastDate');
+            
+            if (lastDate !== today) {
+                // It's a new day, reset daily completions
+                appState.dailyCompletions.clear();
+                saveData();
+            }
+        }
+        
+        // Mark a habit as completed today
+        function markHabitCompleted(habitId) {
+            appState.dailyCompletions.add(habitId);
+            saveData();
+            updateDailyCounter();
+        }
+        
+        // Toggle daily completion status (mark/unmark as completed today)
+        function toggleDailyCompletion(habitId) {
+            try {
+                const id = typeof habitId === 'string' ? parseInt(habitId) : habitId;
+                
+                if (isNaN(id)) {
+                    console.error('Invalid habit ID provided:', habitId);
+                    return;
+                }
+                
+                const habit = appState.habits.find(h => h.id === id);
+                if (!habit) {
+                    console.error('Habit not found with ID:', id);
+                    return;
+                }
+                
+                if (appState.dailyCompletions.has(id)) {
+                    // Unmark as completed
+                    appState.dailyCompletions.delete(id);
+                    showNotification(`${habit.name} unmarked for today`, 'warning');
+                } else {
+                    // Mark as completed
+                    appState.dailyCompletions.add(id);
+                    showNotification(`${habit.name} completed for today!`, 'increment');
+                }
+                
+                            saveData();
+            updateSidebar();
+            updateDailyCounter();
+            updateMobileSidebar();
+                
+            } catch (error) {
+                console.error('Error toggling daily completion:', error);
+            }
+        }
+        
+        // Load daily completions from localStorage
+        function loadDailyCompletions() {
+            const savedCompletions = localStorage.getItem('habitTracker_dailyCompletions');
+            if (savedCompletions) {
+                const completionsArray = JSON.parse(savedCompletions);
+                appState.dailyCompletions = new Set(completionsArray);
+            }
+        }
+        
+        // Initialize WebGL particles background
+        function initWebGL() {
+            const canvas = document.getElementById('webgl-canvas');
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Create particles with varied sizes and colors
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1500;
+            const posArray = new Float32Array(particlesCount * 3);
+            const colorArray = new Float32Array(particlesCount * 3);
+            const sizeArray = new Float32Array(particlesCount);
+            
+            for (let i = 0; i < particlesCount; i++) {
+                // Position
+                posArray[i * 3] = (Math.random() - 0.5) * 10;
+                posArray[i * 3 + 1] = (Math.random() - 0.5) * 10;
+                posArray[i * 3 + 2] = (Math.random() - 0.5) * 8;
+                
+                // Color variation (blue to purple spectrum)
+                const intensity = Math.random();
+                colorArray[i * 3] = 0.2 + intensity * 0.6; // Red
+                colorArray[i * 3 + 1] = 0.3 + intensity * 0.5; // Green
+                colorArray[i * 3 + 2] = 0.8 + intensity * 0.2; // Blue
+                
+                // Size variation
+                sizeArray[i] = Math.random() * 0.01 + 0.002;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+            particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizeArray, 1));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending,
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+            
+            // Add neural network-like connections between some particles
+            const connectionsGeometry = new THREE.BufferGeometry();
+            const connectionPositions = [];
+            const maxConnections = 100;
+            
+            for (let i = 0; i < maxConnections; i++) {
+                const p1 = Math.floor(Math.random() * particlesCount);
+                const p2 = Math.floor(Math.random() * particlesCount);
+                
+                if (p1 !== p2) {
+                    const dist = Math.sqrt(
+                        Math.pow(posArray[p1 * 3] - posArray[p2 * 3], 2) +
+                        Math.pow(posArray[p1 * 3 + 1] - posArray[p2 * 3 + 1], 2) +
+                        Math.pow(posArray[p1 * 3 + 2] - posArray[p2 * 3 + 2], 2)
+                    );
+                    
+                    if (dist < 2) {
+                        connectionPositions.push(
+                            posArray[p1 * 3], posArray[p1 * 3 + 1], posArray[p1 * 3 + 2],
+                            posArray[p2 * 3], posArray[p2 * 3 + 1], posArray[p2 * 3 + 2]
+                        );
+                    }
+                }
+            }
+            
+            connectionsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(connectionPositions, 3));
+            
+            const connectionsMaterial = new THREE.LineBasicMaterial({
+                color: 0x2563eb,
+                transparent: true,
+                opacity: 0.1,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const connectionsMesh = new THREE.LineSegments(connectionsGeometry, connectionsMaterial);
+            scene.add(connectionsMesh);
+            
+            // Animation with constant rotation speed
+            let rotationSpeed = { x: 0.0001, y: 0.0002 };
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                particlesMesh.rotation.y += rotationSpeed.y;
+                particlesMesh.rotation.x += rotationSpeed.x;
+                connectionsMesh.rotation.y += rotationSpeed.y * 0.5;
+                connectionsMesh.rotation.x += rotationSpeed.x * 0.5;
+                
+                // Pulse particles based on activity
+                particlesMaterial.opacity = 0.4 + Math.sin(Date.now() * 0.001) * 0.2;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Mouse interaction
+            canvas.addEventListener('mousemove', (event) => {
+                const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+                
+                camera.position.x = mouseX * 0.5;
+                camera.position.y = mouseY * 0.5;
+                camera.lookAt(scene.position);
+            });
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // Initialize network visualization
+        function initNetwork() {
+            updateNetwork();
+        }
+        
+        // Update network visualization
+        function updateNetwork() {
+            const svg = d3.select('#network-svg');
+            
+            // Use responsive dimensions helper
+            const dimensions = getResponsiveNetworkDimensions();
+            const width = dimensions.width;
+            const height = dimensions.height;
+            const isMobile = dimensions.isMobile;
+            
+            // Clear existing elements except defs
+            svg.selectAll('g').remove();
+            svg.selectAll('line').remove();
+            
+            // Create or update arrow markers
+            let defs = svg.select('defs');
+            if (defs.empty()) {
+                defs = svg.append('defs');
+            }
+            
+            defs.selectAll('marker').remove();
+            defs.append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 25)
+                .attr('refY', 0)
+                .attr('markerWidth', 5)
+                .attr('markerHeight', 5)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-4L8,0L0,4')
+                .attr('fill', '#2563eb')
+                .style('opacity', 0.6);
+            
+            // Create a copy of connections for visualization
+            const linkData = appState.connections.map(c => ({
+                source: typeof c.source === 'object' ? c.source.id : c.source,
+                target: typeof c.target === 'object' ? c.target.id : c.target,
+                sourceNode: appState.habits.find(h => h.id === (typeof c.source === 'object' ? c.source.id : c.source)),
+                targetNode: appState.habits.find(h => h.id === (typeof c.target === 'object' ? c.target.id : c.target))
+            })).filter(link => link.sourceNode && link.targetNode);
+            
+            // Create links with strength visualization
+            const link = svg.append('g')
+                .selectAll('line')
+                .data(linkData)
+                .enter().append('line')
+                .attr('stroke', '#2563eb')
+                .attr('stroke-opacity', 0.6)
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrowhead)')
+                .style('cursor', 'pointer')
+                .attr('class', 'connection-arrow')
+                .on('dblclick', function(event, d) {
+                    event.stopPropagation();
+                    // Remove the connection
+                    appState.connections = appState.connections.filter(c => {
+                        const sourceId = typeof c.source === 'object' ? c.source.id : c.source;
+                        const targetId = typeof c.target === 'object' ? c.target.id : c.target;
+                        return !(sourceId === d.source && targetId === d.target);
+                    });
+                    saveData(); // Save after removing connection
+                    updateNetwork();
+                    updateSidebar(); // Update sidebar after removing connection
+                    updateNetworkMomentum(); // Update momentum after removing connection
+                    updateMobileSidebar(); // Update mobile sidebar
+                })
+                .on('mouseenter', function(event, d) {
+                    d3.select(this)
+                        .attr('stroke-width', 3)
+                        .attr('stroke-opacity', 0.9);
+                })
+                .on('mouseleave', function(event, d) {
+                    d3.select(this)
+                        .attr('stroke-width', 2)
+                        .attr('stroke-opacity', 0.6);
+                });
+            
+            // Create nodes
+            const node = svg.append('g')
+                .selectAll('g')
+                .data(appState.habits)
+                .enter().append('g')
+                .attr('cursor', 'pointer')
+                .on('click', function(event, d) {
+                    // Clear any existing timeout
+                    if (clickTimeout) {
+                        clearTimeout(clickTimeout);
+                        clickTimeout = null;
+                    }
+                    
+                    // Set a new timeout for single click
+                    clickTimeout = setTimeout(() => {
+                        if (appState.connectionMode && appState.selectedNode && appState.selectedNode.id !== d.id) {
+                            createConnection(appState.selectedNode.id, d.id);
+                            appState.connectionMode = false;
+                            appState.selectedNode = null;
+                            updateNetwork();
+                        } else {
+                            openEditModal(d);
+                        }
+                        clickTimeout = null;
+                    }, 250); // 250ms delay to detect double click
+                })
+                .on('dblclick', function(event, d) {
+                    event.stopPropagation();
+                    // Clear the single click timeout
+                    if (clickTimeout) {
+                        clearTimeout(clickTimeout);
+                        clickTimeout = null;
+                    }
+                    appState.connectionMode = true;
+                    appState.selectedNode = d;
+                    d3.select(this).select('circle').classed('glow', true);
+                })
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            // Helper function for smart scaling with mobile adjustments
+            function getNodeRadius(streak) {
+                const isMobile = window.innerWidth <= 768;
+                const baseSize = isMobile ? 15 : 20; // Smaller base size on mobile
+                const scaleFactor = isMobile ? 1.5 : 2; // Reduced scaling on mobile
+                const maxSize = isMobile ? 45 : 72; // Smaller max size on mobile
+                
+                if (streak <= 100) {
+                    return baseSize + Math.sqrt(streak) * scaleFactor;
+                } else {
+                    // Logarithmic scaling for large streaks to prevent oversized nodes
+                    return isMobile ? 
+                        30 + Math.log10(streak) * 6 : // Mobile: smaller max sizes
+                        40 + Math.log10(streak) * 8;   // Desktop: original size
+                }
+            }
+            
+            // Add circles with smart scaling for large streaks
+            node.append('circle')
+                .attr('r', d => getNodeRadius(d.streak))
+                .attr('fill', d => {
+                    const colors = {
+                        health: '#10b981',
+                        productivity: '#3b82f6',
+                        learning: '#8b5cf6',
+                        mindfulness: '#ec4899',
+                        social: '#f59e0b'
+                    };
+                    return colors[d.category] || '#3b82f6';
+                })
+                .attr('fill-opacity', d => 0.8 + Math.min((d.streak / 100) * 0.2, 0.2)) // Capped opacity increase
+                .attr('stroke', d => d.streak > 20 ? '#fbbf24' : '#1e293b') // Gold border for high streaks
+                .attr('stroke-width', d => Math.min(2 + Math.floor(d.streak / 50), 5)) // Capped stroke width
+                .style('filter', d => d.streak > 30 ? 'drop-shadow(0 0 10px currentColor)' : 'none');
+            
+            // Add strength indicator ring for high streaks with smart scaling
+            node.filter(d => d.streak > 7)
+                .append('circle')
+                .attr('r', d => getNodeRadius(d.streak) + 8) // Always 8px larger than main circle
+                .attr('fill', 'none')
+                .attr('stroke', d => {
+                    const colors = {
+                        health: '#10b981',
+                        productivity: '#3b82f6',
+                        learning: '#8b5cf6',
+                        mindfulness: '#ec4899',
+                        social: '#f59e0b'
+                    };
+                    return colors[d.category] || '#3b82f6';
+                })
+                .attr('stroke-width', d => d.streak > 1000 ? 2 : 1) // Thicker ring for very high streaks
+                .attr('stroke-opacity', d => Math.min(0.4 + (d.streak / 1000) * 0.3, 0.8)) // More visible for high streaks
+                .attr('stroke-dasharray', d => d.streak > 1000 ? '10,5' : '5,5'); // Different pattern for high streaks
+            
+            // Add labels with smart positioning and mobile-responsive text
+            node.append('text')
+                .text(d => d.name)
+                .attr('text-anchor', 'middle')
+                .attr('dy', d => -(getNodeRadius(d.streak) + (isMobile ? 10 : 15))) // Closer positioning on mobile
+                .attr('fill', '#e2e8f0')
+                .attr('font-size', d => {
+                    const baseSize = isMobile ? 10 : 12;
+                    const maxSize = isMobile ? 14 : 18;
+                    return Math.min(Math.max(baseSize + Math.log10(d.streak || 1) * (isMobile ? 1 : 2), baseSize), maxSize);
+                })
+                .attr('font-weight', d => d.streak > 7 ? 600 : 400);
+            
+            // Helper function to format large numbers
+            function formatNumber(num) {
+                if (num >= 1000000) {
+                    return (num / 1000000).toFixed(1) + 'M';
+                } else if (num >= 1000) {
+                    return (num / 1000).toFixed(1) + 'K';
+                } else {
+                    return num.toString();
+                }
+            }
+            
+            // Add streak labels with smart formatting and mobile optimization
+            node.append('text')
+                .text(d => formatNumber(d.streak))
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#e2e8f0')
+                .attr('font-size', d => {
+                    // Smart font sizing based on node size with mobile adjustments
+                    const radius = getNodeRadius(d.streak);
+                    const minSize = isMobile ? 8 : 12;
+                    const maxSize = isMobile ? 16 : 24;
+                    const factor = isMobile ? 0.25 : 0.3;
+                    return Math.min(Math.max(radius * factor, minSize), maxSize);
+                })
+                .attr('font-weight', '600');
+            
+            // Add "days" label below streak with smart sizing
+            node.append('text')
+                .text('days')
+                .attr('text-anchor', 'middle')
+                .attr('dy', d => {
+                    const radius = getNodeRadius(d.streak);
+                    const factor = isMobile ? 0.12 : 0.15;
+                    const minOffset = isMobile ? 8 : 10;
+                    return Math.max(radius * factor, minOffset);
+                })
+                .attr('fill', '#94a3b8')
+                .attr('font-size', d => {
+                    const radius = getNodeRadius(d.streak);
+                    const minSize = isMobile ? 6 : 8;
+                    const maxSize = isMobile ? 10 : 14;
+                    const factor = isMobile ? 0.12 : 0.15;
+                    return Math.min(Math.max(radius * factor, minSize), maxSize);
+                })
+                .attr('font-weight', '400');
+            
+            // Force simulation with smart collision detection
+            const simulation = d3.forceSimulation([...appState.habits])
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('link', d3.forceLink(linkData.map(l => ({
+                    source: l.source,
+                    target: l.target
+                }))).id(d => d.id).distance(d => {
+                    // Adjust distance based on node sizes
+                    const sourceRadius = getNodeRadius(d.source.streak || 0);
+                    const targetRadius = getNodeRadius(d.target.streak || 0);
+                    return Math.max(150, sourceRadius + targetRadius + 30);
+                }))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => getNodeRadius(d.streak) + 10)) // Dynamic collision based on actual node size
+                .force('boundary', () => {
+                    // Custom boundary force to keep nodes within visible area
+                    appState.habits.forEach(d => {
+                        const nodeRadius = getNodeRadius(d.streak);
+                        const padding = nodeRadius + 40; // Increased from 20 to 40
+                        
+                        // Apply gentle force to push nodes back if they're near boundaries
+                        if (d.x < padding) d.vx += (padding - d.x) * 0.1;
+                        if (d.x > width - padding) d.vx += (width - padding - d.x) * 0.1;
+                        if (d.y < padding) d.vy += (padding - d.y) * 0.1;
+                        if (d.y > height - padding) d.vy += (height - padding - d.y) * 0.1;
+                    });
+                });
+            
+            simulation.on('tick', () => {
+                // Apply boundary constraints to keep nodes within visible area
+                appState.habits.forEach(d => {
+                    const nodeRadius = getNodeRadius(d.streak);
+                    const padding = nodeRadius + 40; // Increased from 20 to 40 for better boundary constraints
+                    
+                    // Constrain x position (left and right bounds)
+                    d.x = Math.max(padding, Math.min(width - padding, d.x));
+                    
+                    // Constrain y position (top and bottom bounds)
+                    d.y = Math.max(padding, Math.min(height - padding, d.y));
+                });
+                
+                link
+                    .attr('x1', d => {
+                        const sourceNode = appState.habits.find(h => h.id === d.source);
+                        return sourceNode ? sourceNode.x : 0;
+                    })
+                    .attr('y1', d => {
+                        const sourceNode = appState.habits.find(h => h.id === d.source);
+                        return sourceNode ? sourceNode.y : 0;
+                    })
+                    .attr('x2', d => {
+                        const targetNode = appState.habits.find(h => h.id === d.target);
+                        return targetNode ? targetNode.x : 0;
+                    })
+                    .attr('y2', d => {
+                        const targetNode = appState.habits.find(h => h.id === d.target);
+                        return targetNode ? targetNode.y : 0;
+                    });
+                
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+            
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                const nodeRadius = getNodeRadius(d.streak);
+                const padding = nodeRadius + 40; // Increased from 20 to 40 for better boundary constraints
+                
+                // Apply boundary constraints during drag
+                d.fx = Math.max(padding, Math.min(width - padding, event.x));
+                d.fy = Math.max(padding, Math.min(height - padding, event.y));
+            }
+            
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+        
+        // Modal functions
+        function openModal(type) {
+            resetTimeout();
+            document.getElementById(`${type}-modal`).classList.remove('hidden');
+        }
+        
+        function closeModal(type) {
+            resetTimeout();
+            document.getElementById(`${type}-modal`).classList.add('hidden');
+        }
+        
+        function openEditModal(habit) {
+            resetTimeout();
+            document.getElementById('edit-habit-id').value = habit.id;
+            document.getElementById('edit-habit-name').value = habit.name;
+            document.getElementById('edit-habit-streak').value = habit.streak;
+            
+            // Set the modal title (no longer showing streak count)
+            const modalTitle = document.querySelector('#edit-modal h2');
+                modalTitle.textContent = 'Edit Habit';
+            
+            openModal('edit');
+        }
+        
+        // Make formatNumber globally accessible
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            } else {
+                return num.toString();
+            }
+        }
+        
+        // Update sidebar with habit details
+        function updateSidebar() {
+            const habitsList = document.getElementById('habits-list');
+            
+            if (appState.habits.length === 0) {
+                habitsList.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        <p class="text-sm">No habits yet</p>
+                        <p class="text-xs mt-1">Click "Add Habit" to get started</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort habits by streak (descending)
+            const sortedHabits = [...appState.habits].sort((a, b) => b.streak - a.streak);
+            
+            habitsList.innerHTML = sortedHabits.map(habit => {
+                const connections = appState.connections.filter(c => {
+                    const sourceId = typeof c.source === 'object' ? c.source.id : c.source;
+                    const targetId = typeof c.target === 'object' ? c.target.id : c.target;
+                    return sourceId === habit.id || targetId === habit.id;
+                }).length;
+                
+                const categoryColors = {
+                    health: 'bg-green-500/20 text-green-400 border-green-500/30',
+                    productivity: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                    learning: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+                    mindfulness: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+                    social: 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                };
+                
+                const categoryColor = categoryColors[habit.category] || categoryColors.productivity;
+                const isCompletedToday = appState.dailyCompletions.has(habit.id);
+                
+                return `
+                    <div class="glass rounded-lg p-4 hover:bg-slate-800/30 transition-colors cursor-pointer group habit-card-mobile ${isCompletedToday ? 'ring-2 ring-green-500/30' : ''}"
+                         onclick="openEditModal(appState.habits.find(h => h.id === ${habit.id}))">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                            <h3 class="font-medium text-slate-200 group-hover:text-blue-400 transition-colors">${habit.name}</h3>
+                                ${isCompletedToday ? `
+                                    <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                ` : ''}
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full border ${categoryColor}">
+                                ${habit.category}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center space-x-4 habit-stats">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-blue-400">${formatNumber(habit.streak)}</div>
+                                    <div class="text-xs text-slate-500">days</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-purple-400">${connections}</div>
+                                    <div class="text-xs text-slate-500">links</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-1 habit-actions">
+                                ${isCompletedToday ? `
+                                    <button onclick="event.stopPropagation(); toggleDailyCompletion(${habit.id})" 
+                                            class="p-1 bg-green-600/40 hover:bg-green-600/60 rounded text-green-300 hover:text-green-200 transition-colors"
+                                            title="Mark as not completed today"
+                                            data-habit-id="${habit.id}">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                ` : `
+                                    <button onclick="event.stopPropagation(); toggleDailyCompletion(${habit.id})" 
+                                            class="p-1 bg-blue-600/20 hover:bg-blue-600/40 rounded text-blue-400 hover:text-blue-300 transition-colors"
+                                            title="Mark as completed today"
+                                            data-habit-id="${habit.id}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </button>
+                                `}
+                                <button onclick="event.stopPropagation(); incrementHabitStreak(${habit.id})" 
+                                        class="p-1 bg-green-600/20 hover:bg-green-600/40 rounded text-green-400 hover:text-green-300 transition-colors"
+                                        title="Increment streak"
+                                        data-habit-id="${habit.id}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="event.stopPropagation(); decrementHabitStreak(${habit.id})" 
+                                        class="p-1 bg-red-600/20 hover:bg-red-600/40 rounded text-red-400 hover:text-red-300 transition-colors ${habit.streak <= 0 ? 'opacity-50 cursor-not-allowed' : ''}"
+                                        title="Decrement streak"
+                                        data-habit-id="${habit.id}"
+                                        ${habit.streak <= 0 ? 'disabled' : ''}>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="event.stopPropagation(); openEditModal(appState.habits.find(h => h.id === ${habit.id}))" 
+                                        class="p-1 bg-slate-600/20 hover:bg-slate-600/40 rounded text-slate-400 hover:text-slate-300 transition-colors"
+                                        title="Edit habit"
+                                        data-habit-id="${habit.id}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        ${habit.streak > 7 ? `
+                            <div class="mt-3 pt-3 border-t border-slate-700/50">
+                                <div class="flex items-center text-xs text-slate-400">
+                                    <svg class="w-3 h-3 mr-1 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    Strong habit
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Quick increment function for sidebar
+        function incrementHabitStreak(habitId) {
+            try {
+                console.log('Incrementing habit streak for ID:', habitId, 'Type:', typeof habitId);
+                
+                // Ensure habitId is a number
+                const id = typeof habitId === 'string' ? parseInt(habitId) : habitId;
+                
+                if (isNaN(id)) {
+                    console.error('Invalid habit ID provided:', habitId);
+                    return;
+                }
+                
+                const habit = appState.habits.find(h => h.id === id);
+                
+                if (!habit) {
+                    console.error('Habit not found with ID:', id);
+                    console.log('Available habits:', appState.habits.map(h => ({ id: h.id, name: h.name })));
+                    return;
+                }
+                
+                console.log('Found habit:', habit.name, 'current streak:', habit.streak);
+                
+                // Validate current streak value
+                if (typeof habit.streak !== 'number' || habit.streak < 0) {
+                    console.warn('Invalid streak value, resetting to 0');
+                    habit.streak = 0;
+                }
+                
+                // Increment the streak
+                const oldStreak = habit.streak;
+                habit.streak += 1;
+                
+                console.log('Updated streak from', oldStreak, 'to', habit.streak);
+                
+                // Mark habit as completed today
+                markHabitCompleted(id);
+                
+                // Save and update all components
+                saveData();
+                updateNetwork();
+                updateSidebar();
+                updateNetworkMomentum();
+                updateMobileSidebar();
+                
+                // Add visual feedback with slight delay for better UX
+                setTimeout(() => {
+                    triggerPulseAnimation(id);
+                }, 100);
+                
+                console.log('Habit increment completed successfully');
+                
+                // Optional: Show a brief success message
+                showSuccessMessage(`${habit.name} streak increased to ${habit.streak}!`);
+                
+            } catch (error) {
+                console.error('Error incrementing habit streak:', error);
+            }
+        }
+        
+        // Decrement function for sidebar
+        function decrementHabitStreak(habitId) {
+            try {
+                console.log('Decrementing habit streak for ID:', habitId, 'Type:', typeof habitId);
+                
+                // Ensure habitId is a number
+                const id = typeof habitId === 'string' ? parseInt(habitId) : habitId;
+                
+                if (isNaN(id)) {
+                    console.error('Invalid habit ID provided:', habitId);
+                    return;
+                }
+                
+                const habit = appState.habits.find(h => h.id === id);
+                
+                if (!habit) {
+                    console.error('Habit not found with ID:', id);
+                    return;
+                }
+                
+                // Don't allow decrementing below 0
+                if (habit.streak <= 0) {
+                    showNotification(`${habit.name} streak is already at 0`, 'warning');
+                    return;
+                }
+                
+                console.log('Found habit:', habit.name, 'current streak:', habit.streak);
+                
+                // Decrement the streak
+                const oldStreak = habit.streak;
+                habit.streak -= 1;
+                
+                console.log('Updated streak from', oldStreak, 'to', habit.streak);
+                
+                // Save and update all components
+                saveData();
+                updateNetwork();
+                updateSidebar();
+                updateNetworkMomentum();
+                updateMobileSidebar();
+                
+                // Add visual feedback
+                setTimeout(() => {
+                    triggerPulseAnimation(id);
+                }, 100);
+                
+                console.log('Habit decrement completed successfully');
+                
+                // Show success message
+                showNotification(`${habit.name} streak decreased to ${habit.streak}`, 'decrement');
+                
+            } catch (error) {
+                console.error('Error decrementing habit streak:', error);
+            }
+        }
+        
+        // Old notification system removed - now using enhanced stacking notification system above
+        
+        // Custom validation functions
+        function showError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const errorDiv = document.getElementById(fieldId + '-error');
+            const errorText = document.getElementById(fieldId + '-error-text');
+            
+            if (field && errorDiv && errorText) {
+                field.classList.add('border-red-500', 'border-2');
+                field.classList.remove('border-slate-700');
+                errorDiv.classList.remove('hidden');
+                errorText.textContent = message;
+                
+                // Add shake animation
+                field.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    field.style.animation = '';
+                }, 500);
+            }
+        }
+        
+        function clearError(fieldId) {
+            const field = document.getElementById(fieldId);
+            const errorDiv = document.getElementById(fieldId + '-error');
+            
+            if (field && errorDiv) {
+                field.classList.remove('border-red-500', 'border-2');
+                field.classList.add('border-slate-700');
+                errorDiv.classList.add('hidden');
+            }
+        }
+        
+        function clearAllErrors(prefix = '') {
+            const fields = ['habit-name', 'habit-streak'];
+            if (prefix) {
+                fields.forEach(field => clearError(prefix + field));
+            } else {
+                fields.forEach(field => clearError(field));
+            }
+        }
+        
+        function validateHabitForm(isEdit = false) {
+            const prefix = isEdit ? 'edit-' : '';
+            clearAllErrors(prefix);
+            
+            const nameField = document.getElementById(prefix + 'habit-name');
+            const streakField = document.getElementById(prefix + 'habit-streak');
+            
+            let isValid = true;
+            
+            // Validate habit name
+            const name = nameField.value.trim();
+            if (!name) {
+                showError(prefix + 'habit-name', 'Please enter a habit name.');
+                isValid = false;
+            } else if (name.length < 2) {
+                showError(prefix + 'habit-name', 'Habit name must be at least 2 characters long.');
+                isValid = false;
+            } else if (name.length > 50) {
+                showError(prefix + 'habit-name', 'Habit name must be less than 50 characters.');
+                isValid = false;
+            }
+            
+            // Validate streak
+            const streak = parseInt(streakField.value);
+            if (isNaN(streak)) {
+                showError(prefix + 'habit-streak', 'Please enter a valid number.');
+                isValid = false;
+            } else if (streak < 0) {
+                showError(prefix + 'habit-streak', 'Streak must be 0 or greater.');
+                isValid = false;
+            } else if (streak > 100000) {
+                showError(prefix + 'habit-streak', 'Streak seems too high. Please enter a realistic number.');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        // Setup real-time validation clearing
+        function setupValidationListeners() {
+            // Add Habit Modal
+            const habitName = document.getElementById('habit-name');
+            const habitStreak = document.getElementById('habit-streak');
+            
+            if (habitName) {
+                habitName.addEventListener('input', () => clearError('habit-name'));
+                habitName.addEventListener('focus', () => clearError('habit-name'));
+            }
+            
+            if (habitStreak) {
+                habitStreak.addEventListener('input', () => clearError('habit-streak'));
+                habitStreak.addEventListener('focus', () => clearError('habit-streak'));
+            }
+            
+            // Edit Habit Modal
+            const editHabitName = document.getElementById('edit-habit-name');
+            const editHabitStreak = document.getElementById('edit-habit-streak');
+            
+            if (editHabitName) {
+                editHabitName.addEventListener('input', () => clearError('edit-habit-name'));
+                editHabitName.addEventListener('focus', () => clearError('edit-habit-name'));
+            }
+            
+            if (editHabitStreak) {
+                editHabitStreak.addEventListener('input', () => clearError('edit-habit-streak'));
+                editHabitStreak.addEventListener('focus', () => clearError('edit-habit-streak'));
+            }
+        }
+        
+        // Habit management
+        function addHabit(event) {
+            event.preventDefault();
+            
+            // Custom validation
+            if (!validateHabitForm()) {
+                return;
+            }
+            
+            const name = document.getElementById('habit-name').value.trim();
+            const streak = parseInt(document.getElementById('habit-streak').value);
+            const category = document.getElementById('habit-category').value;
+            
+            // Use the same responsive dimensions as updateNetwork() for consistency
+            const isMobile = window.innerWidth <= 768;
+            const sidebarWidth = isMobile ? 0 : 288;
+            const headerHeight = isMobile ? 120 : 80;
+            
+            const width = isMobile ? window.innerWidth : window.innerWidth - sidebarWidth;
+            const height = isMobile ? window.innerHeight * 0.7 : window.innerHeight - headerHeight;
+            
+            // Calculate center position with reduced random offset
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Smart positioning strategy
+            let finalX, finalY;
+            
+            if (appState.habits.length === 0) {
+                // First habit: place exactly in center
+                finalX = centerX;
+                finalY = centerY;
+            } else {
+                // Find a good spot near existing habits
+                const maxOffset = 80; // Smaller offset for tighter clustering
+                let attempts = 0;
+                const maxAttempts = 15;
+                const minDistance = 100; // Minimum distance from other nodes
+                
+                do {
+                    if (attempts < 5) {
+                        // Try near center first
+                        finalX = centerX + (Math.random() - 0.5) * maxOffset;
+                        finalY = centerY + (Math.random() - 0.5) * maxOffset;
+                    } else {
+                        // Expand search radius gradually
+                        const searchRadius = 80 + (attempts - 5) * 20;
+                        const angle = Math.random() * 2 * Math.PI;
+                        finalX = centerX + Math.cos(angle) * searchRadius;
+                        finalY = centerY + Math.sin(angle) * searchRadius;
+                    }
+                    
+                    // Keep within viewport bounds with padding
+                    const padding = 100; // Increased from 80 to 100 for better boundary constraints
+                    finalX = Math.max(padding, Math.min(width - padding, finalX));
+                    finalY = Math.max(padding, Math.min(height - padding, finalY));
+                    
+                    attempts++;
+                    
+                    // Check distance from existing nodes
+                    let tooClose = false;
+                    for (const existingHabit of appState.habits) {
+                        const distance = Math.sqrt(
+                            Math.pow(finalX - existingHabit.x, 2) + 
+                            Math.pow(finalY - existingHabit.y, 2)
+                        );
+                        if (distance < minDistance) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!tooClose || attempts >= maxAttempts) break;
+                    
+                } while (attempts < maxAttempts);
+            }
+            
+            const habit = {
+                id: Date.now(),
+                name,
+                streak,
+                category,
+                x: finalX,
+                y: finalY,
+                // Set fixed positions initially to prevent force simulation from moving it
+                fx: finalX,
+                fy: finalY
+            };
+            
+            appState.habits.push(habit);
+            saveData(); // Save after adding
+            updateNetwork();
+            updateSidebar(); // Update sidebar after adding habit
+            updateNetworkMomentum(); // Update momentum after adding habit
+            updateMobileSidebar(); // Update mobile sidebar
+            
+            // Release the fixed position after a short delay to allow gentle settling
+            setTimeout(() => {
+                const addedHabit = appState.habits.find(h => h.id === habit.id);
+                if (addedHabit) {
+                    delete addedHabit.fx;
+                    delete addedHabit.fy;
+                }
+                // Add visual feedback for the new node
+                triggerPulseAnimation(habit.id);
+            }, 500);
+            
+            closeModal('habit');
+            document.getElementById('habit-name').value = '';
+            document.getElementById('habit-streak').value = '0';
+            clearAllErrors(); // Clear any validation errors
+        }
+        
+        function updateHabit(event) {
+            event.preventDefault();
+            
+            // Custom validation
+            if (!validateHabitForm(true)) {
+                return;
+            }
+            
+            const id = parseInt(document.getElementById('edit-habit-id').value);
+            const name = document.getElementById('edit-habit-name').value.trim();
+            const newStreak = parseInt(document.getElementById('edit-habit-streak').value);
+            
+            const habit = appState.habits.find(h => h.id === id);
+            if (habit) {
+                const oldStreak = habit.streak;
+                habit.name = name;
+                habit.streak = newStreak;
+                
+                // Trigger pulse animation if streak increased
+                if (newStreak > oldStreak) {
+                    triggerPulseAnimation(id);
+                }
+                
+                saveData(); // Save after updating
+                updateNetwork();
+                updateSidebar(); // Update sidebar after updating habit
+                updateNetworkMomentum(); // Update momentum after updating habit
+                updateMobileSidebar(); // Update mobile sidebar
+                closeModal('edit');
+            }
+        }
+        
+        function deleteHabit() {
+            const id = parseInt(document.getElementById('edit-habit-id').value);
+            appState.habits = appState.habits.filter(h => h.id !== id);
+            appState.connections = appState.connections.filter(c => {
+                const sourceId = typeof c.source === 'object' ? c.source.id : c.source;
+                const targetId = typeof c.target === 'object' ? c.target.id : c.target;
+                return sourceId !== id && targetId !== id;
+            });
+            saveData(); // Save after deleting
+            updateNetwork();
+            updateSidebar(); // Update sidebar after deleting habit
+            updateNetworkMomentum(); // Update momentum after deleting habit
+            updateMobileSidebar(); // Update mobile sidebar
+            closeModal('edit');
+        }
+        
+        function createConnection(sourceId, targetId) {
+            const connection = {
+                source: sourceId,
+                target: targetId
+            };
+            appState.connections.push(connection);
+            saveData(); // Save after creating connection
+            updateSidebar(); // Update sidebar after creating connection
+            updateNetworkMomentum(); // Update momentum after creating connection
+            updateMobileSidebar(); // Update mobile sidebar
+        }
+        
+        // Increment streak in edit modal
+        function incrementEditStreak() {
+            resetTimeout();
+            const streakInput = document.getElementById('edit-habit-streak');
+            const currentValue = parseInt(streakInput.value) || 0;
+            streakInput.value = currentValue + 1;
+        }
+        
+        // Custom spinner functions
+        function incrementSpinner(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            
+            const currentValue = parseInt(input.value) || 0;
+            const maxValue = parseInt(input.getAttribute('max')) || 100000;
+            
+            if (currentValue < maxValue) {
+                input.value = currentValue + 1;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Add visual feedback
+                const spinner = input.parentElement.querySelector('.custom-spinner');
+                const button = spinner.children[0];
+                button.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    button.style.transform = '';
+                }, 100);
+            }
+        }
+        
+        function decrementSpinner(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            
+            const currentValue = parseInt(input.value) || 0;
+            const minValue = parseInt(input.getAttribute('min')) || 0;
+            
+            if (currentValue > minValue) {
+                input.value = currentValue - 1;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Add visual feedback
+                const spinner = input.parentElement.querySelector('.custom-spinner');
+                const button = spinner.children[1];
+                button.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    button.style.transform = '';
+                }, 100);
+            }
+        }
+        
+        // Enhanced pulse animation with chain reaction
+        function triggerPulseAnimation(habitId, delay = 0, visited = new Set(), intensity = 1) {
+            // Prevent infinite loops in case of circular connections
+            if (visited.has(habitId)) return;
+            visited.add(habitId);
+            
+            setTimeout(() => {
+                const svg = d3.select('#network-svg');
+                const node = svg.selectAll('g').filter(d => d && d.id === habitId);
+                
+                // Apply enhanced pulse animation
+                node.select('circle').classed('chain-pulse', true);
+                setTimeout(() => node.select('circle').classed('chain-pulse', false), 800);
+                
+                // Animate the connections leading from this node
+                const connections = svg.selectAll('line').filter(function() {
+                    const d = d3.select(this).datum();
+                    return d && d.source === habitId;
+                });
+                
+                connections.each(function() {
+                    const line = d3.select(this);
+                    line.style('stroke-width', +line.attr('stroke-width') + 2)
+                        .style('stroke-opacity', 1)
+                        .transition()
+                        .duration(300)
+                        .style('stroke-width', line.attr('stroke-width'))
+                        .style('stroke-opacity', line.attr('stroke-opacity'));
+                });
+                
+                // Find and cascade to connected habits
+                const connectedHabits = appState.connections
+                    .filter(c => {
+                        const sourceId = typeof c.source === 'object' ? c.source.id : c.source;
+                        return sourceId === habitId;
+                    })
+                    .map(c => typeof c.target === 'object' ? c.target.id : c.target);
+                
+                // Recursively trigger animation for each connected habit with decreasing intensity
+                connectedHabits.forEach((id, index) => {
+                    triggerPulseAnimation(id, 200 + (index * 100), visited, intensity * 0.8);
+                });
+            }, delay);
+        }
+        
+        // Periodic pulse animation
+        function periodicPulse() {
+            console.log('Periodic pulse triggered');
+            if (appState.habits.length > 0 && appState.connections.length > 0) {
+                // Find base nodes (nodes that are sources but not targets)
+                const targetIds = new Set(appState.connections.map(c => 
+                    typeof c.target === 'object' ? c.target.id : c.target
+                ));
+                
+                const baseNodes = appState.habits.filter(habit => {
+                    // Check if this habit is a source in any connection
+                    const isSource = appState.connections.some(c => {
+                        const sourceId = typeof c.source === 'object' ? c.source.id : c.source;
+                        return sourceId === habit.id;
+                    });
+                    
+                    // Check if this habit is NOT a target in any connection
+                    const isNotTarget = !targetIds.has(habit.id);
+                    
+                    return isSource && isNotTarget;
+                });
+                
+                // Trigger animation from each base node
+                baseNodes.forEach((node, index) => {
+                    setTimeout(() => {
+                        triggerPulseAnimation(node.id);
+                    }, index * 200); // Slight delay between different base nodes
+                });
+            }
+        }
+        
+        // Enhanced notification system with smart stacking prevention - moved outside D3 callback
+        let notificationContainer = null;
+        let notificationQueue = [];
+        let notificationId = 0;
+        
+        function initNotificationContainer() {
+            if (!notificationContainer) {
+                notificationContainer = document.createElement('div');
+                notificationContainer.className = 'notification-container';
+                document.body.appendChild(notificationContainer);
+            }
+        }
+        
+        function showNotification(message, type = 'increment', duration = 3000) {
+            initNotificationContainer();
+            
+            // For increment/decrement notifications, remove existing ones of the same type
+            if (type === 'increment' || type === 'decrement') {
+                // Create a copy of the array to avoid modification during iteration
+                const existingTypeNotifications = [...notificationQueue.filter(item => 
+                    item.type === type
+                )];
+                existingTypeNotifications.forEach(notification => {
+                    closeNotification(notification.id);
+                });
+                
+                // Wait a brief moment for cleanup to complete
+                setTimeout(() => {
+                    // Continue with creating new notification after cleanup
+                    createAndShowNotification();
+                }, 50);
+                return;
+            }
+            
+            // For other types, proceed immediately
+            createAndShowNotification();
+            
+            function createAndShowNotification() {
+                const id = ++notificationId;
+                
+                // Determine colors, icons, and styling based on type
+                let typeClass, icon, title;
+                switch (type) {
+                    case 'increment':
+                        typeClass = 'notification-increment';
+                        icon = 'M12 4v16m8-8H4'; // Plus icon
+                        title = 'Streak Increased';
+                        break;
+                    case 'decrement':
+                        typeClass = 'notification-decrement';
+                        icon = 'M20 12H4'; // Minus icon
+                        title = 'Streak Decreased';
+                        break;
+                    case 'warning':
+                        typeClass = 'notification-warning';
+                        icon = 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'; // Warning icon
+                        title = 'Warning';
+                        break;
+                    case 'error':
+                        typeClass = 'notification-error';
+                        icon = 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'; // Error icon
+                        title = 'Error';
+                        break;
+                    default:
+                        typeClass = 'notification-increment';
+                        icon = 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'; // Info icon
+                        title = 'Info';
+                }
+                
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `notification ${typeClass}`;
+                notification.setAttribute('data-notification-id', id);
+                notification.setAttribute('data-notification-type', type);
+                
+                notification.innerHTML = `
+                    <div class="notification-progress" style="animation-duration: ${duration}ms;"></div>
+                    <div class="notification-content">
+                        <div class="flex items-start space-x-3">
+                            <div class="notification-icon flex-shrink-0">
+                                <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${icon}"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-medium opacity-90">${title}</div>
+                                <div class="text-sm opacity-75 mt-1">${message}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Limit to maximum 3 notifications for other types (excluding increment/decrement which are already limited to 1)
+                if (type !== 'increment' && type !== 'decrement' && notificationQueue.length >= 3) {
+                    const oldest = notificationQueue[0];
+                    closeNotification(oldest.id);
+                }
+                
+                // Add to container first
+                notificationContainer.appendChild(notification);
+                
+                // Auto-remove after duration with proper cleanup
+                const timeoutId = setTimeout(() => {
+                    console.log(`Auto-timeout triggered for notification ${id}`);
+                    closeNotification(id);
+                }, duration);
+                
+                // Add to queue with timeout reference
+                const queueItem = { id, element: notification, timeout: timeoutId, type: type };
+                notificationQueue.push(queueItem);
+                
+                console.log(`Notification ${id} created with ${duration}ms timeout, queue length: ${notificationQueue.length}`);
+                
+                return id;
+            }
+        }
+        
+        function closeNotification(id) {
+            console.log(`Attempting to close notification ${id}`);
+            const queueIndex = notificationQueue.findIndex(item => item.id === id);
+            if (queueIndex === -1) {
+                console.log(`Notification ${id} not found in queue`);
+                return;
+            }
+            
+            const { element, timeout } = notificationQueue[queueIndex];
+            console.log(`Closing notification ${id}, found in queue at index ${queueIndex}`);
+            
+            // Clear timeout immediately
+            if (timeout) {
+                clearTimeout(timeout);
+                console.log(`Cleared timeout for notification ${id}`);
+            }
+            
+            // Remove from queue immediately to prevent duplicate operations
+            notificationQueue.splice(queueIndex, 1);
+            console.log(`Notification ${id} removed from queue, new queue length: ${notificationQueue.length}`);
+            
+            // Animate out if element still exists
+            if (element && element.parentNode) {
+                element.style.animation = 'slideOutToRight 0.3s ease-in forwards';
+                
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    if (element.parentNode) {
+                        element.parentNode.removeChild(element);
+                        console.log(`Notification ${id} removed from DOM`);
+                    }
+                }, 300);
+            } else {
+                console.log(`Notification ${id} element already removed or not found`);
+            }
+        }
+        
+        function clearAllNotifications() {
+            notificationQueue.forEach(({ id }) => closeNotification(id));
+        }
+        
+        // Confirm reset function called from custom modal
+        function confirmReset() {
+            localStorage.removeItem('habitTracker_habits');
+            localStorage.removeItem('habitTracker_connections');
+            closeModal('reset-confirm');
+            
+            // Show a loading indication before reload
+            showNotification('Resetting data...', 'warning', 1000);
+            
+            setTimeout(() => {
+                location.reload(); // Reload to reinitialize with example data
+            }, 1000);
+        }
+        
+        // Mobile responsiveness functions
+        function toggleMobileMenu() {
+            const menuContent = document.getElementById('mobile-menu-content');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            const arrow = toggle.querySelector('.mobile-menu-arrow');
+            
+            if (menuContent.classList.contains('expanded')) {
+                menuContent.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                menuContent.classList.add('expanded');
+                toggle.classList.add('expanded');
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+        
+        function toggleMobileSidebar() {
+            const sidebarContent = document.getElementById('mobile-sidebar-content');
+            const toggle = document.querySelector('.mobile-sidebar-toggle');
+            const arrow = toggle.querySelector('.mobile-sidebar-arrow');
+            const footer = document.querySelector('.mobile-sidebar-footer');
+            
+            if (toggle.classList.contains('expanded')) {
+                sidebarContent.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+                arrow.style.transform = 'rotate(0deg)';
+                if (footer) footer.style.display = 'none';
+            } else {
+                sidebarContent.classList.add('expanded');
+                toggle.classList.add('expanded');
+                arrow.style.transform = 'rotate(180deg)';
+                if (footer) footer.style.display = 'block';
+                
+                // Update mobile habits list when opened
+                updateMobileSidebar();
+                
+                // Force network redraw after sidebar state change
+                setTimeout(() => {
+                    if (typeof updateNetwork === 'function') {
+                        updateNetwork();
+                    }
+                }, 350); // After animation completes
+            }
+        }
+        
+        // Update mobile sidebar with same content as desktop
+        function updateMobileSidebar() {
+            const desktopList = document.getElementById('habits-list');
+            const mobileList = document.getElementById('habits-list-mobile');
+            
+            if (desktopList && mobileList) {
+                mobileList.innerHTML = desktopList.innerHTML;
+            }
+        }
+        
+        // Update mobile stats to sync with desktop
+        function updateMobileStats() {
+            // Sync momentum bars
+            for (let i = 1; i <= 5; i++) {
+                const desktopBar = document.getElementById(`momentum-bar-${i}`);
+                const mobileBar = document.getElementById(`momentum-bar-${i}-mobile`);
+                
+                if (desktopBar && mobileBar) {
+                    mobileBar.style.backgroundColor = desktopBar.style.backgroundColor;
+                    mobileBar.style.boxShadow = desktopBar.style.boxShadow;
+                    mobileBar.style.transform = desktopBar.style.transform;
+                    mobileBar.className = desktopBar.className.replace('w-3 h-6', 'w-2 h-4');
+                }
+            }
+            
+            // Sync stats values
+            const statsMapping = [
+                ['network-score', 'network-score-mobile'],
+                ['daily-count', 'daily-count-mobile'],
+                ['total-habits', 'total-habits-mobile'],
+                ['habit-count', 'habit-count-mobile'],
+                ['connection-count', 'connection-count-mobile']
+            ];
+            
+            statsMapping.forEach(([desktopId, mobileId]) => {
+                const desktopElement = document.getElementById(desktopId);
+                const mobileElement = document.getElementById(mobileId);
+                
+                if (desktopElement && mobileElement) {
+                    mobileElement.textContent = desktopElement.textContent;
+                    mobileElement.className = desktopElement.className;
+                }
+            });
+        }
+        
+        // Check if device is mobile
+        function isMobileDevice() {
+            return window.innerWidth <= 768;
+        }
+        
+        // Handle responsive network sizing
+        function getResponsiveNetworkDimensions() {
+            const isMobile = isMobileDevice();
+            const sidebarWidth = isMobile ? 0 : 288;
+            
+            if (isMobile) {
+                // For mobile, use fixed dimensions that fit the container
+                const networkArea = document.querySelector('.network-area-mobile');
+                if (networkArea) {
+                    const rect = networkArea.getBoundingClientRect();
+                    return {
+                        width: Math.max(rect.width - 32, window.innerWidth - 32), // Account for margins
+                        height: Math.max(rect.height - 16, window.innerHeight * 0.6 - 16), // Account for padding
+                        isMobile: true
+                    };
+                }
+                
+                // Fallback dimensions for mobile
+                return {
+                    width: window.innerWidth - 32,
+                    height: Math.min(window.innerHeight * 0.6, 500),
+                    isMobile: true
+                };
+            }
+            
+            // Desktop dimensions
+            const headerHeight = 80;
+            const availableHeight = window.innerHeight - headerHeight;
+            
+            return {
+                width: window.innerWidth - sidebarWidth,
+                height: availableHeight,
+                isMobile: false
+            };
+        }
+        
+        // Make functions globally accessible
+        window.closeNotification = closeNotification;
+        window.showNotification = showNotification;
+        window.clearAllNotifications = clearAllNotifications;
+        window.confirmReset = confirmReset;
+        window.toggleDailyCompletion = toggleDailyCompletion;
+        window.incrementSpinner = incrementSpinner;
+        window.decrementSpinner = decrementSpinner;
+        window.toggleMobileMenu = toggleMobileMenu;
+        window.toggleMobileSidebar = toggleMobileSidebar;
+        
+        // Add window resize listener for responsive updates
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                // Only update network if it exists (D3 is loaded)
+                if (typeof updateNetwork === 'function') {
+                    updateNetwork();
+                }
+            }, 250); // Debounce resize events
+        });
+        
+        // Loading Screen Management
+        function createLoadingParticles() {
+            const particlesContainer = document.querySelector('.loading-particles');
+            const particleCount = 15;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'loading-particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loading-screen');
+            setTimeout(() => {
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }, 2200); // Wait for progress bar to complete
+        }
+        
+        // Initialize loading screen
+        window.addEventListener('load', () => {
+            createLoadingParticles();
+            hideLoadingScreen();
+        });
+        
+        // Show loading screen on page refresh/reload
+        window.addEventListener('beforeunload', () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'flex';
+                loadingScreen.classList.remove('fade-out');
+            }
+        });
+
+        // Load D3.js
+        const d3Script = document.createElement('script');
+        d3Script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+        d3Script.onload = () => {
+            // Initialize everything after D3 loads
+            initWebGL();
+            
+            // Initialize with example habits only if no data exists (check localStorage first)
+            const savedHabits = localStorage.getItem('habitTracker_habits');
+            const savedConnections = localStorage.getItem('habitTracker_connections');
+            
+            if (savedHabits && savedConnections) {
+                // Load from localStorage
+                appState.habits = JSON.parse(savedHabits);
+                appState.connections = JSON.parse(savedConnections);
+                
+                // Load daily completions and check for new day
+                loadDailyCompletions();
+                checkAndResetDailyCompletions();
+                
+                            updateNetworkMomentum(); // Calculate momentum on load
+            updateSidebar(); // Update sidebar on load
+            updateMobileStats(); // Sync mobile stats
+            } else {
+                // Add example habits with diverse strengths including high streaks (first time only)
+            appState.habits = [
+                    { id: 1, name: 'Meditation', streak: 25, category: 'mindfulness', x: window.innerWidth/2 - 150, y: (window.innerHeight-80)/2 - 50 },
+                    { id: 2, name: 'Exercise', streak: 18, category: 'health', x: window.innerWidth/2 + 150, y: (window.innerHeight-80)/2 - 50 },
+                    { id: 3, name: 'Reading', streak: 1250, category: 'learning', x: window.innerWidth/2, y: (window.innerHeight-80)/2 + 100 },
+                    { id: 4, name: 'Journaling', streak: 5, category: 'mindfulness', x: window.innerWidth/2 - 100, y: (window.innerHeight-80)/2 + 200 },
+                    { id: 5, name: 'Coding', streak: 40, category: 'productivity', x: window.innerWidth/2 + 100, y: (window.innerHeight-80)/2 + 200 }
+                ];
+            }
+            
+            // Initialize network
+            initNetwork();
+            
+            // Wait a moment before creating connections (only for new users)
+            setTimeout(() => {
+                if (!savedConnections) {
+                appState.connections = [
+                        { source: 1, target: 2 }, // Meditation -> Exercise
+                        { source: 2, target: 3 }, // Exercise -> Reading
+                        { source: 1, target: 4 }, // Meditation -> Journaling
+                        { source: 4, target: 5 }, // Journaling -> Coding
+                        { source: 3, target: 5 }  // Reading -> Coding
+                    ];
+                    saveData(); // Save initial connections
+                }
+                
+                // Initialize daily completions for new users
+                checkAndResetDailyCompletions();
+                
+                updateNetwork();
+                updateSidebar(); // Update sidebar after initial setup
+                updateNetworkMomentum(); // Update momentum after initial setup
+                updateMobileSidebar(); // Update mobile sidebar
+                
+                // Add real-time validation clearing
+                setupValidationListeners();
+                
+                // Initialize custom dropdowns
+                initCustomDropdowns();
+                
+                // Set up periodic pulse with shorter interval for better effect
+                setInterval(periodicPulse, 4000);
+            }, 50);
+        };
+        document.head.appendChild(d3Script);
+        
+        // Update the increment function to use new notification system
+        function showSuccessMessage(message) {
+            showNotification(message, 'increment');
+        }
+        
+        // Custom Dropdown Functionality
+        function initCustomDropdowns() {
+            document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+                const trigger = dropdown.querySelector('.custom-dropdown-trigger');
+                const menu = dropdown.querySelector('.custom-dropdown-menu');
+                const selectedText = dropdown.querySelector('.dropdown-selected-text');
+                const hiddenInput = dropdown.parentNode.querySelector('input[type="hidden"]');
+                
+                // Toggle dropdown
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Check if this dropdown is already open
+                    const isCurrentlyOpen = dropdown.classList.contains('open');
+                    
+                    // Close all dropdowns first
+                    closeAllDropdowns();
+                    
+                    // If this dropdown was not open, open it
+                    if (!isCurrentlyOpen) {
+                        // Check if dropdown would go outside viewport
+                        const rect = trigger.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        const dropdownHeight = 160; // max-height of dropdown
+                        const spaceBelow = viewportHeight - rect.bottom;
+                        const spaceAbove = rect.top;
+                        
+                        // If not enough space below but enough space above, use dropup
+                        if (spaceBelow < dropdownHeight + 20 && spaceAbove > dropdownHeight + 20) {
+                            dropdown.classList.add('dropup');
+                        } else {
+                            dropdown.classList.remove('dropup');
+                        }
+                        
+                        dropdown.classList.add('open');
+                    }
+                });
+                
+                // Handle keyboard navigation
+                trigger.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        
+                        // Check if this dropdown is already open
+                        const isCurrentlyOpen = dropdown.classList.contains('open');
+                        
+                        // Close all dropdowns first
+                        closeAllDropdowns();
+                        
+                        // If this dropdown was not open, open it
+                        if (!isCurrentlyOpen) {
+                            // Check viewport positioning for keyboard navigation too
+                            const rect = trigger.getBoundingClientRect();
+                            const viewportHeight = window.innerHeight;
+                            const dropdownHeight = 160;
+                            const spaceBelow = viewportHeight - rect.bottom;
+                            const spaceAbove = rect.top;
+                            
+                            if (spaceBelow < dropdownHeight + 20 && spaceAbove > dropdownHeight + 20) {
+                                dropdown.classList.add('dropup');
+                            }
+                            
+                            dropdown.classList.add('open');
+                        }
+                    }
+                });
+                
+                // Handle option selection
+                dropdown.querySelectorAll('.custom-dropdown-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        // Remove selected class from all options
+                        dropdown.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        
+                        // Add selected class to clicked option
+                        option.classList.add('selected');
+                        
+                        // Update display text and hidden input
+                        const value = option.dataset.value;
+                        const text = option.innerHTML;
+                        selectedText.innerHTML = text;
+                        if (hiddenInput) {
+                            hiddenInput.value = value;
+                        }
+                        
+                        // Close dropdown
+                        dropdown.classList.remove('open');
+                    });
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', closeAllDropdowns);
+        }
+        
+        function closeAllDropdowns() {
+            document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('open');
+                dropdown.classList.remove('dropup');
+            });
+        }
+    </script>
+</body>
+</html>
