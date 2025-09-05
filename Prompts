@@ -4,3 +4,32 @@ Develop a habit formation visualizer for desktop browsers showing neural network
 
 Turn #1 - Prompt
 I am a very visual and organized person. Recently, I read a book about habit formation, which gave me an idea. I would like to have a website for desktop browsers to help me visualize habit formation. Users should be able to visualize neural network-style connections between their routines. I would need an interactive node graph displaying the habit relationships, strength indicators based on streak duration, animations showing some habit chain reactions, and a daily commitment counter with momentum visualization. I would like to use WebGL particles to build dynamic background effects. This website should have a minimalistic and dark mode design, have a blue eclipse color palette with midnight blue tones, and use TailwindCSS to implement the styling. I would like the response to be a single, self-contained HTML file with embedded CSS and JS.
+
+
+## Social media analytic dashboard
+
+Seeded Prompt:
+Create a social media engagement tracker visualizing post performance timelines. Must include: multi-platform data integration, event markers for campaigns, and temporal sentiment correlation graphs. Features: brush selection for detail views, real-time data updates via WebSocket, and shared cursor across visualizations. Implement responsive hybrid layout (grid + flexbox) with mobile-optimized data table overlay. Use Next.js dynamic routes for saved analysis sharing.
+
+Turn #1 - Prompt
+I need a social media analytics dashboard that tracks the performance of posts across multiple platforms over time. The dashboard should include timeline visualizations with campaign event markers and temporal sentiment correlation graphs. Task list: build in zooming/selection capability for brush selection to provide greater detail, read data over WebSocket in realtime, synchronized cursors across graphs and visuals. Create a responsive layout using a hybrid system of a grid and flexbox, develop an overlay for the displayed data table optimized for mobile, use Next.js dynamic routing to enable shareable links to saved analyses. The look and feel should follow the style of frosted glass panels with transparent backgrounds, dark mode colors, large round glassy buttons, and bright colorful labels (like electric blue, neon green, coral pink). The solution should be contained in a single TSX file.
+
+
+## Educational Learning platform
+Seeded Prompt:
+
+Create an educational platform homepage employing Next.js, aimed at engaging students and educators. Ensure the design is responsive, providing an optimal viewing experience on both desktop and mobile devices. Incorporate an intuitive course catalog, video previews, testimonials, and a section for upcoming webinars. Leverage interactive elements to encourage exploration and retention.Return the full code solution within a single TSX file.
+Turn #1 - Prompt
+I need a modern educational learning application that will impress students and teachers. It needs to be compatible with desktops and phones, and also look good and function well on all devices. I would like a simple-to-access course catalog, interactive video preview sections, student and teacher testimonial showcase, and an events page for future webinars and events. There also need to be interactive elements to get users more involved. I would like a design aesthetic and colors that are educationally themed. A modern header and footer should be there. Return the full code solution using NextJS. The solution should be self-contained within a single TSX file.
+
+
+## test button micro-interaction Interface
+Make it sound natural: like a human describing what they want.
+
+Paraphrase the seeded prompt and alter its structure
+Paraphrase the above prompt just to make it more diverse while keeping the request intact. Make sure it doesn't start anymore with design, build, construct, create, implement.
+Seeded Prompt:
+Design a Next.js desktop application for testing button micro-interactions. Create 10+ button styles with unique hover/focus/active states, including parallax effects, border animations, and gradient flows. Add a control panel to adjust animation speed and easing functions. Structure the layout as a grid-based dashboard with live preview cards and detailed animation timelines, all within a single dynamic page component.
+
+Turn #1 - Prompt
+I want a Next.js desktop application meant to explore and test button micro-interactions. The interface should showcase 10 or more distinct button styles, each featuring unique hover, focus, and active states such as parallax effects, animated borders, and flowing gradients. Include a control panel that lets users adjust animation speed and easing settings. The layout should follow a grid-based dashboard format, with live preview cards and detailed animation timelines, all integrated into a single dynamic page component. The UI should follow a modern neumorphic and glassmorphic design trends with a vibrant dark theme. The solution should be self-contained within a single TSX file.
