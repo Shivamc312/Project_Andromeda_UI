@@ -1,0 +1,6 @@
+## Neural Habit Network UI
+Seeded Prompt:
+Develop a habit formation visualizer for desktop browsers showing neural network-style connections between routines. Features: 1) Interactive node graph of habit relationships 2) Strength indicators based on streak duration 3) Animation showing habit chain reactions 4) Daily commitment counter with momentum visualization. Use WebGL particles for dynamic background effects. Single HTML file with embedded CSS/JS.
+
+Turn #1 - Prompt
+I am a very visual and organized person. Recently, I read a book about habit formation, which gave me an idea. I would like to have a website for desktop browsers to help me visualize habit formation. Users should be able to visualize neural network-style connections between their routines. I would need an interactive node graph displaying the habit relationships, strength indicators based on streak duration, animations showing some habit chain reactions, and a daily commitment counter with momentum visualization. I would like to use WebGL particles to build dynamic background effects. This website should have a minimalistic and dark mode design, have a blue eclipse color palette with midnight blue tones, and use TailwindCSS to implement the styling. I would like the response to be a single, self-contained HTML file with embedded CSS and JS.
